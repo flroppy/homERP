@@ -1,0 +1,21 @@
+---
+layout: base.njk
+title: Home Inventory
+---
+
+<h2>Browse Your Inventory</h2>
+
+<div class="item-grid">
+  {% for item in collections.allItems %}
+    {% if item.url != '/' and not item.url.includes('/index.html') %}
+      <div class="item-card">
+        <h3><a href="{{ item.url }}">{{ item.data.name }}</a></h3>
+        <p>
+          {% if item.data.category %}Category: {{ item.data.category }}<br>{% endif %}
+          {% set parentLocation = item.inputPath | getParentLocation %}
+          {% if parentLocation %}Location: {{ parentLocation }}{% endif %}
+        </p>
+      </div>
+    {% endif %}
+  {% endfor %}
+</div>
