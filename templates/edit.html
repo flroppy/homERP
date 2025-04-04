@@ -10,7 +10,7 @@
         <input type="text" id="name" name="name" value="{{ metadata.name }}" required>
         
         <label for="content">Content:</label>
-        <textarea id="content" name="content" rows="10" required>{{ metadata.content }}</textarea>
+        <textarea id="content" name="content" rows="10">{{ metadata.content }}</textarea>
         
         <button type="submit">Save Changes</button>
         <a href="/browse/{{ path }}" class="button">Cancel</a>

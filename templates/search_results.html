@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block header %}
+    <nav>
+        <ul class="breadcrumb">
+            <li>
+                <a href="/browse/">house</a>
+            </li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block title %}Search - House Inventory{% endblock %}
+
+{% block content %}
+    <h1>Search Results for "{{ query }}"</h1>
+    
+    {% if results %}
+        <ul>
+        {% for result in results %}
+            <li>
+                <strong>Item:</strong> <a href="/browse/{{ result.path }}">{{ result.name }}</a> <small>score: {{ result.score}}</small>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No results found.</p>
+    {% endif %}
+    
+{% endblock %}

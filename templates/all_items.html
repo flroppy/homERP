@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block style %}
+        /* Basic styling */
+        ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        .collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+        .content {
+            display: none;
+        }
+        .expanded .content {
+            display: block;
+        }
+        .expanded span::before {
+            content: "v";
+        }
+        .collapsed .content {
+            display: none;
+        }
+        .collapsed span::before {
+            content: "> ";
+        }
+{% endblock %}
+
+{% block title %}All Items - House Inventory{% endblock %}
+{% block header %}
+    <h1>All Items</h1>
+{% endblock %}
+
+{% block content %}
+    <a href="/browse">Home</a>
+    <ul>
+        {% macro render_items(items, level=0) %}
+            {% for item in items %}
+            <li class="{% if level > 1 %}collapsed{% else %}expanded{% endif %}">
+                    <span class="collapsible" onclick="toggleCollapse(this)">
+                        <a href="/browse/{{ item.path }}">{{ item.name }}</a>
+                    </span>
+                    {% if item.sub_items %}
+                        <div class="content">
+                            <ul>
+                                {{ render_items(item.sub_items, level + 1) }}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        {% endmacro %}
+        
+        <!-- Render the items -->
+        {{ render_items(items) }}
+    </ul>
+
+    <script>
+        // Toggle collapsible items on click
+        function toggleCollapse(element) {
+            const parentLi = element.parentElement;
+            parentLi.classList.toggle('expanded');
+            parentLi.classList.toggle('collapsed');
+        }
+
+    </script>
+{% endblock %}
