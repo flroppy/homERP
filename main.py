@@ -34,7 +34,7 @@ HOUSE_ROOT = Path(HOUSE_NAME)
 # Ensure house directory exists
 HOUSE_ROOT.mkdir(exist_ok=True)
 
-IGNORED_ATTACHMENTS = ['index.md']
+IGNORED_ATTACHMENTS = ['index.md', 'photo.png', 'photo.jpg']
 
 # Helper function to generate a 6-character base64 ID
 def generate_id():
@@ -109,16 +109,26 @@ def read_index_file(item_path):
         metadata = {"name": item_path.name, "id": ""}
         markdown_text = content
 
-    markdown_text = shift_headings_down(markdown_text)
-    markdown_text = adjust_paths_in_markdown(markdown_text, Path('/download/') / str(item_path)[len(HOUSE_NAME):])
+    photo_path = None
+    if os.path.isfile(item_path / 'photo.png'):
+        photo_path = Path('/download/') / Path(*list(item_path.parts[1:])) / 'photo.png'
+    elif os.path.isfile(item_path / 'photo.jpg'):
+        photo_path = Path('/download/') / Path(*list(item_path.parts[1:])) / 'photo.jpg'
+
 
     return {
         **metadata,
         "name": item_path.name,
         "content": markdown_text,
-        "html_content": markdown.markdown(markdown_text),
-        "barcode_path": "barcode" / item_path.relative_to(HOUSE_ROOT) / "barcode.png"
+        "html_content": render_html(markdown_text, Path(*list(item_path.parts[1:]))),
+        "photo_path": photo_path
     }
+
+# Adjust markdown for rendering
+def render_html(markdown_text, item_path):
+    markdown_text = adjust_paths_in_markdown(markdown_text, '/download/' / item_path)
+    markdown_text = shift_headings_down(markdown_text)
+    return markdown.markdown(markdown_text)
 
 # Helper function to list items in a directory
 def list_directory_items(directory_path):
@@ -150,6 +160,7 @@ def list_directory_items(directory_path):
             # This is an attachment
             attachments.append({
                 "name": path.name,
+                "owner": os.path.dirname(path),
                 "path": path.relative_to(HOUSE_ROOT),
                 "size": path.stat().st_size
             })
@@ -193,7 +204,7 @@ async def browse(request: Request, path: str = ""):
     
     # Get item metadata
     metadata = read_index_file(item_path)
-    
+
     # Get sub-items and attachments
     items, attachments = list_directory_items(item_path)
     
@@ -205,18 +216,11 @@ async def browse(request: Request, path: str = ""):
     for part in Path(path).parts:
         current_path = current_path / part
         part_path = HOUSE_ROOT / current_path
-        try:
-            part_metadata = read_index_file(part_path)
-            breadcrumbs.append({
-                "name": part_metadata.get("name", part),
-                "path": str(current_path)
-            })
-        except Exception:
-            breadcrumbs.append({
-                "name": part,
-                "path": str(current_path)
-            })
-    
+        breadcrumbs.append({
+            "name": part,
+            "path": str(current_path)
+        })
+
     return templates.TemplateResponse(
         "item.html", 
         {
@@ -289,7 +293,7 @@ async def edit_item(request: Request, path: str = ""):
     
     # Get item metadata
     metadata = read_index_file(item_path)
-    
+
     return templates.TemplateResponse(
         "edit.html", 
         {
@@ -356,7 +360,7 @@ async def new_item_form(request: Request, path: str = ""):
     )
 
 @app.post("/create/{parent_path:path}")
-async def create_item(parent_path: str, name: str = Form(...), content: str = Form(...)):
+async def create_item(parent_path: str, name: str = Form(...), content: str = Form(...), photo: UploadFile = File(...)):
     # Create a normalized folder name from the item name
     folder_name = "".join(c if c.isalnum() or c in "-_ " else "" for c in name).strip()
     folder_name = folder_name.replace(" ", "-").lower()
@@ -381,7 +385,21 @@ async def create_item(parent_path: str, name: str = Form(...), content: str = Fo
     with open(index_path, "w") as f:
         f.write(f"---\n{front_matter}---\n{content}")
 
-    return RedirectResponse(url=f"/browse/{parent_path}/{folder_name}", status_code=303)
+    if photo:
+        print(photo)
+        if photo.content_type in ['image/png', 'image/jpeg']:
+            if photo.content_type == 'image/png':
+                file_path = Path(item_path) / 'photo.png'
+            else:
+                file_path = Path(item_path) / 'photo.jpg'
+            with open(file_path, "wb") as f:
+                shutil.copyfileobj(photo.file, f)
+        else:
+            return HTTPException(status_code=503, detail="photo not a photo, item created with no photo")
+
+
+    redirect_path = Path(parent_path) / folder_name
+    return RedirectResponse(url=f"/browse/{redirect_path}", status_code=303)
 
 @app.post("/upload/{path:path}")
 async def upload_file(path: str, file: UploadFile = File(...)):
@@ -436,7 +454,6 @@ async def barcode_file(path: str):
 
 def fuzzy_search(query, items, attachments):
     results = {}
-    seen_paths = set()  # To track already added items and attachments
 
     # Search in item names
     item_names = [item["name"] for item in items]
@@ -458,14 +475,13 @@ def fuzzy_search(query, items, attachments):
         metadata = read_index_file(HOUSE_ROOT / item["path"])
         content_score = fuzz.partial_ratio(query, metadata["content"])
         if content_score > 50 and item["name"] not in results.keys():  # 50 is the threshold, you can adjust it
-            results.append({
+            results[item["name"]] = {
                 "type": "item_content",
                 "name": item["name"],
                 "path": item["path"],
                 "score": content_score
-            })
-            seen_paths.add(item["path"])
-        elif results[item['name']]['score'] < content_score:
+            }
+        elif content_score > 50 and results[item['name']]['score'] < content_score:
             results[item['name']]['score'] = content_score
 
     # Search in attachment names
@@ -474,16 +490,16 @@ def fuzzy_search(query, items, attachments):
     
     for match in attachment_matches:
         matched_attachment = next(att for att in attachments if att["name"] == match[0])
-        if matched_attachment["name"] not in results.keys():
-            results.append({
+        print(matched_attachment['owner'])
+        if match[1] > 5 and matched_attachment['owner'] not in results.keys():
+            results[matched_attachment['owner']] = {
                 "type": "attachment",
                 "name": matched_attachment["name"],
                 "path": matched_attachment["path"],
                 "score": match[1]
-            })
-            seen_paths.add(matched_attachment["path"])
-        elif results[matched_attachment['name']]['score'] < match[1]:
-            results[matched_attachment['name']]['score'] = match[1]
+            }
+        elif match[1] > 5 and results[matched_attachment['owner']]['score'] < match[1]:
+            results[matched_attachment['owner']]['score'] = match[1]
 
     # Sort results by score
     #results.sort(key=lambda x: x["score"], reverse=True)

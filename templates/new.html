@@ -5,12 +5,16 @@
 {% block header %}Create New Item{% endblock %}
 
 {% block content %}
-    <form action="/create/{{ parent_path }}" method="post">
+    <form action="/create/{{ parent_path }}" method="post" enctype="multipart/form-data">
         <label for="name">Item Name:</label>
         <input type="text" id="name" name="name" required>
         
-        <label for="content">Item Name:</label>
+        <label for="content">Content:</label>
         <textarea type="text" id="content" name="content"></textarea>
+
+        <label for="photo">Content:</label>
+        <input type="file" id="photo" name="photo" accept="image/png, image/jpeg" />
+        <br>
 
         <button type="submit">Create Item</button>
         <a href="/browse/{{ parent_path }}" class="button">Cancel</a>
