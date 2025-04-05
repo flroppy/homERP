@@ -13,7 +13,7 @@ import markdown
 import shutil
 import re
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from pathlib import Path
 from typing import List, Optional
 from pylibdmtx.pylibdmtx import encode
@@ -36,7 +36,7 @@ HOUSE_ROOT = Path(HOUSE_NAME)
 # Ensure house directory exists
 HOUSE_ROOT.mkdir(exist_ok=True)
 
-IGNORED_ATTACHMENTS = ['index.md', 'photo.png', 'photo.jpg']
+IGNORED_ATTACHMENTS = ['index.md', 'photo.jpg'] # Attachments that are rendered rather than attachments
 
 UUID_LENGTH = 8
 
@@ -144,6 +144,7 @@ def read_index_file(item_path):
     return {
         **metadata,
         "name": item_path.name,
+        "path": item_path.relative_to(HOUSE_ROOT),
         "content": markdown_text,
         "html_content": render_html(markdown_text, Path(*list(item_path.parts[1:]))),
         "photo_path": photo_path
@@ -170,22 +171,7 @@ def list_directory_items(directory_path):
 
     for path in directory_path.iterdir():
         if path.is_dir() and path.name != ".git":
-            # This is a sub-item
-            try:
-                metadata = read_index_file(path)
-                items.append({
-                    "path": path.relative_to(HOUSE_ROOT),
-                    "name": path.name,
-                    "id": metadata.get("id", ""),
-                })
-            except Exception:
-                # If we can't read the metadata, just use the folder name
-                items.append({
-                    "path": path.relative_to(HOUSE_ROOT),
-                    "name": path.name,
-                    "id": "",
-                    "barcode_path": False
-                })
+            items.append(read_index_file(path))
         elif path.is_file() and path.name not in IGNORED_ATTACHMENTS:
             # This is an attachment
             attachments.append({
@@ -212,7 +198,6 @@ def list_all_items(directory_path):
     attachments.extend(current_attachments)
 
     # Recursively process subdirectories
-    print(directory_path)
     for path in directory_path.iterdir():
         if path.is_dir() and path.name != ".git":  # Ignore .git directories
             items_recursive, attachments_recursive = list_all_items(path)
@@ -243,6 +228,14 @@ async def browse(request: Request, path: str = ""):
     # Get sub-items and attachments
     items, attachments = list_directory_items(item_path)
 
+    siblings = None
+    if item_path != HOUSE_ROOT:
+        siblings, unused = list_directory_items(Path(os.path.dirname(item_path)))
+        print(siblings)
+        siblings = [s for s in siblings if s.get('name') != metadata.get('name')]
+        siblings = sorted(siblings, key=lambda x: x['name'])
+
+
     # Sort sub-items
     items = sorted(items, key=lambda x: x['name'])
 
@@ -266,6 +259,7 @@ async def browse(request: Request, path: str = ""):
             "path": path,
             "metadata": metadata,
             "items": items,
+            "siblings": siblings,
             "attachments": attachments,
             "breadcrumbs": breadcrumbs
         }
@@ -554,12 +548,43 @@ async def download_file(path: str):
 
     return FileResponse(file_path, filename=file_path.name)
 
+@app.get("/thumbnail/{path:path}")
+async def download_file(path: str):
+    file_path = HOUSE_ROOT / path / 'photo.jpg'
+
+    # Check if the file exists
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    try:
+        im = Image.open(file_path)
+        im = ImageOps.exif_transpose(im)
+        # Get the original width and height
+        width, height = im.size
+
+        # Determine the new dimensions (the smallest dimension of the image)
+        new_dim = min(width, height)
+
+        # Calculate the left, top, right, and bottom coordinates for the crop box
+        left = (width - new_dim) // 2
+        top = (height - new_dim) // 2
+        right = (width + new_dim) // 2
+        bottom = (height + new_dim) // 2
+        im = im.crop((left,top,right,bottom))
+        im.thumbnail((128,128))
+    except IOError:
+        raise HTTPException(status_code=503, detail="File rendering failed")
+
+    img_byte_arr = BytesIO()
+    im.save(img_byte_arr, format="JPEG")
+    img_byte_arr.seek(0)
+    return StreamingResponse(img_byte_arr, media_type="image/jpeg")
+
 # Barcode generators
 
 
 @app.get("/barcode/{path:path}")
 async def barcode_file(path: str):
-    print(path)
     item_path = HOUSE_ROOT / path
     metadata = read_index_file(item_path)
     if not metadata:
@@ -673,7 +698,6 @@ def fuzzy_search(query, items, attachments):
     for match in attachment_matches:
         matched_attachment = next(
             att for att in attachments if att["name"] == match[0])
-        print(matched_attachment['owner'])
         if match[1] > 5 and matched_attachment['owner'] not in results.keys():
             results[matched_attachment['owner']] = {
                 "type": "attachment",
@@ -731,11 +755,9 @@ def find_item_by_id(item_id: str):
     Helper function to find an item by its ID. Returns the path of the item if found, None otherwise.
     """
     for path in [HOUSE_ROOT] + list(HOUSE_ROOT.rglob('*')):  # Iterate over all files and directories in the HOUSE_ROOT
-        print(path)
         if path.is_dir():
             try:
                 metadata = read_index_file(path)
-                print(metadata)
                 if metadata.get("id") == item_id:
                     return path  # Return the path if ID matches
             except Exception:

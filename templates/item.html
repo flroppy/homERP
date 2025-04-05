@@ -2,6 +2,28 @@
 
 {% block title %}{{ metadata.name }} - House Inventory{% endblock %}
 
+{% block style %}
+    <style>
+        /* Extend the .button class from simple.css */
+        .button-item {
+            margin-right:5px;
+            padding:0px !important;
+            min-height:3rem;
+            align-items: center;
+            vertical-align: middle;
+            display:flex;
+            border:none !important;
+        }
+
+        /* Style for the thumbnail image */
+        .button-thumbnail img {
+            height: 4rem; /* Thumbnail height */
+            margin-right: 10px; /* Space between the thumbnail and text */
+            vertical-align: middle;
+        }
+    </style>
+{% endblock %}
+
 {% block header %}
     <nav>
         <ul class="breadcrumb">
@@ -59,14 +81,19 @@
     </section>
 
     <section>
-        <h3>Items Inside</h2>
+        <h3>Inside</h2>
     {% if items %}
+    <div style="display:flex">
             {% for item in items %}
-                    <!---{% if item.id %}
-                        <p><small>ID: {{ item.id }}</small></p>
-                        {% endif %}--->
-                    <a href="/browse/{{ item.path }}" class="button">{{item.name}}</a>
+                    {% if item.photo_path %}
+                        <a href="/browse/{{item.path}}" class="button button-item button-thumbnail">
+                            <img src="/thumbnail/{{item.path}}">{{item.name}}&nbsp;
+                        </a>
+                    {% else %}
+                        <a href="/browse/{{ item.path }}" class="button button-item">&nbsp;{{item.name}}&nbsp;</a>
+                    {% endif %}
             {% endfor %}
+    </div>
             <br>
     {% endif %}
         <br><a href="/new/{{ path }}" class="button">Add New Item</a>
@@ -96,6 +123,26 @@
             <button type="submit">Upload Attachment</button>
         </form>
     </section>
+
+    {% if siblings %}
+    <section>
+        <h3>Siblings</h2>
+    <div style="display:flex">
+            {% for item in siblings %}
+                    {% if item.photo_path %}
+                        <a href="/browse/{{item.path}}" class="button button-item button-thumbnail">
+                            <img src="/thumbnail/{{item.path}}">{{item.name}}&nbsp;
+                        </a>
+                    {% else %}
+                        <a href="/browse/{{ item.path }}" class="button button-item">&nbsp;{{item.name}}&nbsp;</a>
+                    {% endif %}
+            {% endfor %}
+    </div>
+            <br>
+        <br><a href="/new/{{ path }}" class="button">Add New Item</a>
+    </section>
+    {% endif %}
+
 
 
 {% endblock %}
