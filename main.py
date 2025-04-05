@@ -64,7 +64,7 @@ def generate_barcode(item_id):
 
     # Scale the barcode to the desired height while maintaining the aspect ratio
     barcode_width = int(barcode_img.width * scale_factor)
-    barcode_img = barcode_img.resize((barcode_width, BARCODE_RENDERED_HEIGHT))
+    barcode_img = barcode_img.resize((barcode_width, BARCODE_RENDERED_HEIGHT), resample=Image.Resampling.NEAREST)
 
     return barcode_img
 
@@ -117,7 +117,8 @@ def adjust_paths_in_markdown(md_content, base_dir):
 def read_index_file(item_path):
     index_path = item_path / "index.md"
     if not index_path.exists():
-        return {"name": item_path.name, "id": ""}
+        return None
+        #return {"name": item_path.name, "id": ""}
 
     with open(index_path, "r") as f:
         content = f.read()
@@ -469,7 +470,10 @@ async def create_item(
     folder_name = name
 
     if not folder_name:
-        folder_name = generate_id()
+        return HTTPException(status_code=503, detail="Provide a name")
+
+    if '?' in folder_name:
+        return HTTPException(status_code=503, detail="? not allowed in name")
 
     # Generate a unique ID
     item_id = generate_id()
@@ -503,7 +507,7 @@ async def create_item(
     if go == 'true':
         return RedirectResponse(url=f"/browse/{redirect_path}", status_code=303)
     else:
-        return RedirectResponse(url=f"/browse/{parent_path}", status_code=303)
+        return RedirectResponse(url=f"/new/{parent_path}", status_code=303)
 
 
 @app.post("/upload/{path:path}")
@@ -555,8 +559,11 @@ async def download_file(path: str):
 
 @app.get("/barcode/{path:path}")
 async def barcode_file(path: str):
+    print(path)
     item_path = HOUSE_ROOT / path
     metadata = read_index_file(item_path)
+    if not metadata:
+        raise HTTPException(status_code=404, detail="Item not found")
     id = metadata.get("id")
     barcode_img = generate_barcode(id)
     img_byte_arr = BytesIO()
