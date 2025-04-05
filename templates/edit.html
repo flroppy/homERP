@@ -5,13 +5,17 @@
 {% block header %}Edit {{ metadata.name }}{% endblock %}
 
 {% block content %}
-    <form action="/save/{{ path }}" method="post">
+    <form action="/save/{{ path }}" method="post" enctype="multipart/form-data">
         <label for="name">Name:</label>
         <input type="text" id="name" name="name" value="{{ metadata.name }}" required>
         
         <label for="content">Content:</label>
         <textarea id="content" name="content" rows="10">{{ metadata.content }}</textarea>
         
+        <label for="photo">Photo:</label>
+        <input type="file" id="photo" name="photo" accept="image/png, image/jpeg" capture="environment" />
+        <br>
+
         <button type="submit">Save Changes</button>
         <a href="/browse/{{ path }}" class="button">Cancel</a>
     </form>

@@ -1,0 +1,13 @@
+version: '3.8'  # Specify the version of Docker Compose
+
+services:
+  python-app:
+    build:
+      context: .  # Build the image from the current directory
+    volumes:
+      - .:/app  # Mount the current directory to the container's /app directory
+    ports:
+      - "8000:8000"  # Map port 5000 on the host to port 5000 in the container
+    environment:
+      - PYTHONUNBUFFERED=1  # Ensure logs are printed directly to the console (useful for debugging)
+    #command: python app.py  # Command to run the application

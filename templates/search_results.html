@@ -19,7 +19,7 @@
         <ul>
         {% for result in results %}
             <li>
-                <strong>Item:</strong> <a href="/browse/{{ result.path }}">{{ result.name }}</a> <small>score: {{ result.score}}</small>
+                <a href="/browse/{{ result.path }}">{{ result.name }}</a> <small>score: {{ result.score}}</small>
             </li>
         {% endfor %}
         </ul>

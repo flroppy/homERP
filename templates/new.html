@@ -12,11 +12,20 @@
         <label for="content">Content:</label>
         <textarea type="text" id="content" name="content"></textarea>
 
-        <label for="photo">Content:</label>
-        <input type="file" id="photo" name="photo" accept="image/png, image/jpeg" />
+        <label for="photo">Photo:</label>
+        <input type="file" id="photo" name="photo" accept="image/jpeg, image/png"  capture="environment" />
         <br>
 
-        <button type="submit">Create Item</button>
+        <!-- Hidden input field to capture the value of 'go' -->
+        <input type="hidden" id="go" name="go" value="false">
+
+        <!-- Button for 'Create Item & Go' -->
+        <button type="submit" onclick="document.getElementById('go').value = 'true'">Create & Go</button>
+
+        <!-- Button for 'Create Item & Stay' -->
+        <button type="submit" onclick="document.getElementById('go').value = 'false'">Create & Stay</button>
+
+        <br>
         <a href="/browse/{{ parent_path }}" class="button">Cancel</a>
     </form>
 {% endblock %}

@@ -1,0 +1,12 @@
+fastapi
+pyyaml
+uuid
+markdown
+pillow
+fuzzywuzzy
+pylibdmtx
+uvicorn
+pylibdmtx
+jinja2
+python-multipart
+python-Levenshtein

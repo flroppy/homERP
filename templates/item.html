@@ -22,25 +22,40 @@
 {% block content %}
     <section>
     <header>
-<!---        {% if metadata.barcode_path %}
-            <img style="height:45px;vertical-align:middle" src="/{{metadata.barcode_path}}" alt="Item Barcode">
-            {% elif metadata.id %}
-            <p>
-                <a href="/regenerate-barcode/{{ path }}" class="button">Generate Barcode</a>
-            </p>
-        {% endif %}--->
-        <h1 style="display:inline-block;margin:0px;vertical-align:bottom;line-height:1">{{ metadata.name }}</h2>
-        <aside>
+        <h1 style="display:inline-block;margin:0px;vertical-align:bottom;line-height:1">{{ metadata.name }}<a href="/barcode/{{path}}" style="text-decoration:none">📃</a></h1>
             {% if metadata.photo_path %}
-                <img src='{{metadata.photo_path}}'>
-            {% else %}
-                #TODO Add upload image button
+            <aside>
+                <img src='{{metadata.photo_path}}' style="max-height:250px;">
+            </aside>
             {% endif %}
-        </aside>
     </header>
 
         {{ metadata.html_content | safe }}
         <a href="/edit/{{ path }}" class="button">Edit</a>
+        <dialog id="delete_dialog">
+            <h3>Are you sure?</h3>
+            <p>All sub items will be moved in to parent item.</p>
+            <form action="/delete/{{ path }}" method="POST" style="display:inline-block">
+                <button type="submit">Delete</button>
+            </form>
+            <button id="delete_close" autofocus>Cancel</button>
+        </dialog>
+        <button id="delete_show">Delete</button>
+        <script>
+            const dialog = document.getElementById("delete_dialog");
+            const showButton = document.getElementById("delete_show");
+            const closeButton = document.getElementById("delete_close");
+
+            // "Show the dialog" button opens the dialog modally
+            showButton.addEventListener("click", () => {
+              dialog.showModal();
+            });
+
+            // "Close" button closes the dialog
+            closeButton.addEventListener("click", () => {
+              dialog.close();
+            });
+        </script>
     </section>
 
     <section>
@@ -52,6 +67,7 @@
                         {% endif %}--->
                     <a href="/browse/{{ item.path }}" class="button">{{item.name}}</a>
             {% endfor %}
+            <br>
     {% endif %}
         <br><a href="/new/{{ path }}" class="button">Add New Item</a>
     </section>

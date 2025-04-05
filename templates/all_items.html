@@ -13,6 +13,9 @@
             cursor: pointer;
             user-select: none;
         }
+        .collapsible a{
+            text-decoration: none;
+        }
         .content {
             display: none;
         }
@@ -20,7 +23,7 @@
             display: block;
         }
         .expanded span::before {
-            content: "v";
+            content: "v ";
         }
         .collapsed .content {
             display: none;
@@ -40,9 +43,9 @@
     <ul>
         {% macro render_items(items, level=0) %}
             {% for item in items %}
-            <li class="{% if level > 1 %}collapsed{% else %}expanded{% endif %}">
+            <li class="{% if level > 0 %}collapsed{% else %}expanded{% endif %}">
                     <span class="collapsible" onclick="toggleCollapse(this)">
-                        <a href="/browse/{{ item.path }}">{{ item.name }}</a>
+                        {{ item.name }}<a href="/browse/{{ item.path }}"> 🔗</a>
                     </span>
                     {% if item.sub_items %}
                         <div class="content">
