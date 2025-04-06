@@ -30,7 +30,7 @@ app = FastAPI(title="House Inventory App")
 templates = Jinja2Templates(directory="templates")
 
 # Root directory for house items
-HOUSE_NAME = "house"
+HOUSE_NAME = "House"
 HOUSE_ROOT = Path(HOUSE_NAME)
 
 # Ensure house directory exists

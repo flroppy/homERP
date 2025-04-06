@@ -67,3 +67,6 @@ Write a script to bulk edit grocy
 * Binli?
 * Mintri?
 * Try to work a TLD in: .store, .house, .storage, .haus
+
+## Technical Debt
+I've just been writing CSS in style attributes in elements, I should probably not have done that

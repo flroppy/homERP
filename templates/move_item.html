@@ -36,6 +36,12 @@
                 let text = option.textContent.toLowerCase();
                 option.style.display = text.includes(searchTerm) ? '' : 'none';
             });
+
+            // Find the first visible option and select it
+            let firstVisibleOption = Array.from(options).find(option => option.style.display !== 'none');
+            if (firstVisibleOption) {
+                document.getElementById('destination').value = firstVisibleOption.value;
+            }
         }
     </script>
 {% endblock %}
