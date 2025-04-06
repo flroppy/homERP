@@ -36,7 +36,8 @@ HOUSE_ROOT = Path(HOUSE_NAME)
 # Ensure house directory exists
 HOUSE_ROOT.mkdir(exist_ok=True)
 
-IGNORED_ATTACHMENTS = ['index.md', 'photo.jpg'] # Attachments that are rendered rather than attachments
+# Attachments that are rendered rather than attachments
+IGNORED_ATTACHMENTS = ['index.md', 'photo.jpg', 'thumbnail.jpg']
 
 UUID_LENGTH = 8
 
@@ -64,7 +65,8 @@ def generate_barcode(item_id):
 
     # Scale the barcode to the desired height while maintaining the aspect ratio
     barcode_width = int(barcode_img.width * scale_factor)
-    barcode_img = barcode_img.resize((barcode_width, BARCODE_RENDERED_HEIGHT), resample=Image.Resampling.NEAREST)
+    barcode_img = barcode_img.resize(
+        (barcode_width, BARCODE_RENDERED_HEIGHT), resample=Image.Resampling.NEAREST)
 
     return barcode_img
 
@@ -118,7 +120,7 @@ def read_index_file(item_path):
     index_path = item_path / "index.md"
     if not index_path.exists():
         return None
-        #return {"name": item_path.name, "id": ""}
+        # return {"name": item_path.name, "id": ""}
 
     with open(index_path, "r") as f:
         content = f.read()
@@ -231,10 +233,11 @@ async def browse(request: Request, path: str = ""):
 
     siblings = None
     if item_path != HOUSE_ROOT:
-        siblings, unused = list_directory_items(Path(os.path.dirname(item_path)))
-        siblings = [s for s in siblings if s.get('name') != metadata.get('name')]
+        siblings, unused = list_directory_items(
+            Path(os.path.dirname(item_path)))
+        siblings = [s for s in siblings if s.get(
+            'name') != metadata.get('name')]
         siblings = sorted(siblings, key=lambda x: x['name'])
-
 
     # Sort sub-items
     items = sorted(items, key=lambda x: x['name'])
@@ -285,6 +288,7 @@ async def all_items(request: Request):
                         "path": path.relative_to(HOUSE_ROOT),
                         "name": metadata.get("name", path.name),
                         "id": metadata.get("id", ""),
+                        "photo_path": metadata.get("photo_path", ""),
                         # Recursively get sub-items
                         "sub_items": build_item_hierarchy(path)
                     })
@@ -388,6 +392,11 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(...), 
             file_path = Path(item_path) / 'photo.jpg'
             with open(file_path, "wb") as f:
                 shutil.copyfileobj(photo.file, f)
+
+            # Delete thumbnail so it can be regenerated
+            thumbnail_path = Path(item_path) / 'thumbnail.jpg'
+            if thumbnail_path.exists():
+                os.remove(thumbnail_path)
         else:
             return HTTPException(status_code=503, detail="photo not a photo, item edited with no photo")
 
@@ -405,6 +414,7 @@ async def new_item_form(request: Request, path: str = ""):
     return templates.TemplateResponse(
         "new.html",
         {
+            "parent": os.path.basename(parent_path),
             "request": request,
             "parent_path": path
         }
@@ -540,13 +550,20 @@ async def delete_attachment(path: str):
 
 @app.get("/download/{path:path}")
 async def download_file(path: str):
-    file_path = HOUSE_ROOT / path
+    file_path = HOUSE_ROOT / path# Ensure that the resolved absolute path is within the HOUSE_ROOT directory
+
+    absolute_path = file_path.resolve()
+
+    # Ensure that the resolved absolute path is within the HOUSE_ROOT directory
+    if not str(absolute_path).startswith(str(HOUSE_ROOT.resolve())):
+        raise HTTPException(status_code=403, detail="Access to this file is forbidden")
 
     # Check if the file exists
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="File not found")
 
     return FileResponse(file_path, filename=file_path.name)
+
 
 @app.get("/thumbnail/{path:path}")
 async def download_file(path: str):
@@ -556,28 +573,40 @@ async def download_file(path: str):
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="File not found")
 
-    try:
-        im = Image.open(file_path)
-        im = ImageOps.exif_transpose(im)
-        # Get the original width and height
-        width, height = im.size
+    thumbnail_path = Path(os.path.dirname(file_path)) / 'thumbnail.jpg'
 
-        # Determine the new dimensions (the smallest dimension of the image)
-        new_dim = min(width, height)
+    if not thumbnail_path.exists():
+        try:
+            im = Image.open(file_path)
+            im = ImageOps.exif_transpose(im)
+            # Get the original width and height
+            width, height = im.size
 
-        # Calculate the left, top, right, and bottom coordinates for the crop box
-        left = (width - new_dim) // 2
-        top = (height - new_dim) // 2
-        right = (width + new_dim) // 2
-        bottom = (height + new_dim) // 2
-        im = im.crop((left,top,right,bottom))
-        im.thumbnail((128,128))
-    except IOError:
-        raise HTTPException(status_code=503, detail="File rendering failed")
+            # Determine the new dimensions (the smallest dimension of the image)
+            new_dim = min(width, height)
 
-    img_byte_arr = BytesIO()
-    im.save(img_byte_arr, format="JPEG")
-    img_byte_arr.seek(0)
+            # Calculate the left, top, right, and bottom coordinates for the crop box
+            left = (width - new_dim) // 2
+            top = (height - new_dim) // 2
+            right = (width + new_dim) // 2
+            bottom = (height + new_dim) // 2
+            im = im.crop((left, top, right, bottom))
+            im.thumbnail((128, 128))
+            im.save(thumbnail_path, format="JPEG")
+        except IOError:
+            raise HTTPException(
+                status_code=503, detail="File rendering failed")
+
+        img_byte_arr = BytesIO()
+        im.save(img_byte_arr, format="JPEG")
+        img_byte_arr.seek(0)
+
+    else:
+        with open(thumbnail_path, "rb") as image:
+            f = image.read()
+            img_byte_arr = BytesIO(f)
+            img_byte_arr.seek(0)
+
     return StreamingResponse(img_byte_arr, media_type="image/jpeg")
 
 # Barcode generators
@@ -765,6 +794,57 @@ def find_item_by_id(item_id: str):
                 continue
     return None  # Return None if no match is found
 
+
+@app.get("/move/{item_path:path}", response_class=HTMLResponse)
+async def move_item_select(request: Request, item_path: str = ""):
+    item_path_obj = HOUSE_ROOT / item_path
+
+    # Check if the item exists
+    if not item_path_obj.exists():
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    # List all items in the root directory for selection
+    all_items, _ = list_all_items(HOUSE_ROOT)
+
+    return templates.TemplateResponse(
+        "move_item.html",
+        {
+            "request": request,
+            "item_path": item_path,
+            "item_name": os.path.basename(item_path),
+            "items": all_items,
+        }
+    )
+
+@app.post("/move/{item_path:path}")
+async def move_item(request: Request, item_path: str, destination: str = Form(...), by_id: str = Form(...)):
+    item_path_obj = HOUSE_ROOT / item_path
+    if by_id:
+        destination_path_obj = find_item_by_id(by_id)
+        destination = destination_path_obj.relative_to(HOUSE_ROOT)
+    else:
+        destination_path_obj = HOUSE_ROOT / destination
+
+    # Check if both the item and destination exist
+    if not item_path_obj.exists():
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    if not destination_path_obj.exists():
+        raise HTTPException(status_code=404, detail="Destination not found")
+
+    # Ensure the destination is a directory
+    if not destination_path_obj.is_dir():
+        raise HTTPException(status_code=400, detail="Destination must be a directory")
+
+    try:
+        # Move the item to the selected destination
+        new_location = destination_path_obj / item_path_obj.name
+        item_path_obj.rename(new_location)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error moving item: {str(e)}")
+
+    # Redirect to the new location
+    return RedirectResponse(url=f"/browse/{destination}", status_code=303)
 
 # Run the app
 if __name__ == "__main__":

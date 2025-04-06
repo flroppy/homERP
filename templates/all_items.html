@@ -13,6 +13,8 @@
         .collapsible {
             cursor: pointer;
             user-select: none;
+            display: inline-flex;
+            align-items: center;
         }
         .collapsible a{
             text-decoration: none;
@@ -23,14 +25,14 @@
         .expanded .content {
             display: block;
         }
-        .expanded span::before {
-            content: "v ";
+        .expanded>span::before {
+            content: "▼ ";
         }
         .collapsed .content {
             display: none;
         }
-        .collapsed span::before {
-            content: "> ";
+        .collapsed>span::before {
+            content: "► ";
         }
 </style>
 {% endblock %}
@@ -45,10 +47,11 @@
     <ul>
         {% macro render_items(items, level=0) %}
             {% for item in items %}
-            <li class="{% if level > 0 %}collapsed{% else %}expanded{% endif %}">
-                    <span class="collapsible" onclick="toggleCollapse(this)">
-            <img src="/thumbnail/{{item.path}}">
-                        
+            <li class="{%if item.sub_items%}{% if level >= 0 %}collapsed{% else %}expanded{% endif %}{% endif %}">
+                <span class="collapsible" {%if item.sub_items%}onclick="toggleCollapse(this)"{%endif%}>
+                        {% if item.photo_path %}
+                            <img src="/thumbnail/{{item.path}}" style="height:3rem">
+                        {% endif %}
                         {{ item.name }}<a href="/browse/{{ item.path }}"> 🔗</a>
                     </span>
                     {% if item.sub_items %}

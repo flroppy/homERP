@@ -56,6 +56,7 @@
 
         {{ metadata.html_content | safe }}
         <a href="/edit/{{ path }}" class="button">Edit</a>
+        <a href="/move/{{ path }}" class="button">Move</a>
         <dialog id="delete_dialog">
             <h3>Are you sure?</h3>
             <p>All sub items will be moved in to parent item.</p>
@@ -64,7 +65,7 @@
             </form>
             <button id="delete_close" autofocus>Cancel</button>
         </dialog>
-        <button id="delete_show">Delete</button>
+        <button id="delete_show" style="background-color:var(--accent-text)">🗑️</button>
         <script>
             const dialog = document.getElementById("delete_dialog");
             const showButton = document.getElementById("delete_show");
@@ -80,11 +81,11 @@
               dialog.close();
             });
         </script>
+    {% if items %}
     </section>
 
     <section>
         <h3>Inside</h2>
-    {% if items %}
     <div style="display:flex; flex-wrap:wrap">
             {% for item in items %}
                     {% if item.photo_path %}
@@ -97,9 +98,13 @@
             {% endfor %}
     </div>
             <br>
-    {% endif %}
         <br><a href="/new/{{ path }}" class="button">Add New Item</a>
     </section>
+    {% else %}
+    <br>
+        <a href="/new/{{ path }}" class="button">Add New Inside</a>
+    </section>
+    {% endif %}
 
     <section>
         <h3>Attachments</h2>
@@ -107,8 +112,8 @@
         <ul>
             {% for attachment in attachments %}
             <li>
-                    <a href="/download/{{ attachment.path }}" class="button">Download</a>
-                    <button href="/delete-attachment/{{ attachment.path }}" onclick="document.getElementById('dialog-delete-{{attachment.name}}').showModal()">Delete</button>
+                    <a href="/download/{{ attachment.path }}" class="button">⇓</a>
+                    <button href="/delete-attachment/{{ attachment.path }}" onclick="document.getElementById('dialog-delete-{{attachment.name}}').showModal()" style="background-color:var(--accent-text)">🗑️</button>
                     <dialog id="dialog-delete-{{attachment.name}}">
                         <h2>Are you sure?</h2>
                         <form method="dialog">
@@ -141,7 +146,6 @@
             {% endfor %}
     </div>
             <br>
-        <br><a href="/new/{{ path }}" class="button">Add New Item</a>
     </section>
     {% endif %}
 

@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}New Item - House Inventory{% endblock %}
+{% block title %}New Item in {{parent}} - House Inventory{% endblock %}
 
-{% block header %}Create New Item{% endblock %}
+{% block header %}Create New Item in {{parent}}{% endblock %}
 
 {% block content %}
+    <h3> Create in {{ parent }}</h3>
     <form action="/create/{{ parent_path }}" method="post" enctype="multipart/form-data">
-        <label for="name">Item Name:</label>
+        <label for="name">Name:</label>
         <input type="text" id="name" name="name" required>
         
         <label for="content">Content:</label>
