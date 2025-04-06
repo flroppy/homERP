@@ -8,7 +8,7 @@
     <h3>Move {{item_name}}</h3>
     <form action="/move/{{ item_path }}" method="post">
         <label for="by-id">Destination ID:</label>
-        <input type="text" id="by_id" name="by_id" placeholder="ID">
+        <input type="text" id="by_id" name="by_id" placeholder="ID" autofocus>
         <br>
         OR
         <label for="search">Filter Destination:</label>
@@ -24,6 +24,7 @@
         <br>
 
         <input type="submit" value="Move Item">
+        <a href="/browse/{{ parent_path }}" class="button">Cancel</a>
     </form>
 
     <script>

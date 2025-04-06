@@ -19,6 +19,9 @@
         .collapsible a{
             text-decoration: none;
         }
+        .collapsible img {
+            margin-right:5px;
+        }
         .content {
             display: none;
         }
@@ -43,7 +46,10 @@
 {% endblock %}
 
 {% block content %}
+    <div class="collapsible">
+    <img src="/thumbnail/" style="height:3rem">
     <a href="/browse">Home</a>
+    </div>
     <ul>
         {% macro render_items(items, level=0) %}
             {% for item in items %}
