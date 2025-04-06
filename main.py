@@ -176,8 +176,9 @@ def list_directory_items(directory_path):
             # This is an attachment
             attachments.append({
                 "name": path.name,
-                "owner": os.path.dirname(path),
+                "owner": os.path.basename(os.path.dirname(path)),
                 "path": path.relative_to(HOUSE_ROOT),
+                "parent_path": Path(os.path.dirname(path)).relative_to(HOUSE_ROOT),
                 "size": path.stat().st_size
             })
 
@@ -231,7 +232,6 @@ async def browse(request: Request, path: str = ""):
     siblings = None
     if item_path != HOUSE_ROOT:
         siblings, unused = list_directory_items(Path(os.path.dirname(item_path)))
-        print(siblings)
         siblings = [s for s in siblings if s.get('name') != metadata.get('name')]
         siblings = sorted(siblings, key=lambda x: x['name'])
 
@@ -701,8 +701,8 @@ def fuzzy_search(query, items, attachments):
         if match[1] > 5 and matched_attachment['owner'] not in results.keys():
             results[matched_attachment['owner']] = {
                 "type": "attachment",
-                "name": matched_attachment["name"],
-                "path": matched_attachment["path"],
+                "name": matched_attachment["owner"],
+                "path": matched_attachment["parent_path"],
                 "score": match[1]
             }
         elif match[1] > 5 and results[matched_attachment['owner']]['score'] < match[1]:

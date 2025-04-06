@@ -47,6 +47,8 @@
             {% for item in items %}
             <li class="{% if level > 0 %}collapsed{% else %}expanded{% endif %}">
                     <span class="collapsible" onclick="toggleCollapse(this)">
+            <img src="/thumbnail/{{item.path}}">
+                        
                         {{ item.name }}<a href="/browse/{{ item.path }}"> 🔗</a>
                     </span>
                     {% if item.sub_items %}
@@ -58,8 +60,7 @@
                     {% endif %}
                 </li>
             {% endfor %}
-        {% endmacro %}
-        
+        {% endmacro %}        
         <!-- Render the items -->
         {{ render_items(items) }}
     </ul>

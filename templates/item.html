@@ -11,8 +11,10 @@
             min-height:3rem;
             align-items: center;
             vertical-align: middle;
-            display:flex;
+            display:inline-flex;
             border:none !important;
+            flex-shrink:0;
+            flex-wrap: wrap;
         }
 
         /* Style for the thumbnail image */
@@ -83,7 +85,7 @@
     <section>
         <h3>Inside</h2>
     {% if items %}
-    <div style="display:flex">
+    <div style="display:flex; flex-wrap:wrap">
             {% for item in items %}
                     {% if item.photo_path %}
                         <a href="/browse/{{item.path}}" class="button button-item button-thumbnail">
@@ -127,7 +129,7 @@
     {% if siblings %}
     <section>
         <h3>Siblings</h2>
-    <div style="display:flex">
+    <div style="display:flex;flex-wrap:wrap;">
             {% for item in siblings %}
                     {% if item.photo_path %}
                         <a href="/browse/{{item.path}}" class="button button-item button-thumbnail">
