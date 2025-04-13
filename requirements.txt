@@ -10,3 +10,5 @@ pylibdmtx
 jinja2
 python-multipart
 python-Levenshtein
+brother-ql
+dulwich

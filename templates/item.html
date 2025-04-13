@@ -46,7 +46,9 @@
 {% block content %}
     <section>
     <header>
-        <h1 style="display:inline-block;margin:0px;vertical-align:bottom;line-height:1">{{ metadata.name }}<a href="/barcode/{{path}}" style="text-decoration:none">📃</a></h1>
+        <h1 style="display:inline-block;margin:0px;vertical-align:bottom;line-height:1">{{ metadata.name }}</h1>
+        <button style="background-color:var(--accent-text)" onclick="fetch('/barcode/{{path}}').then();" title="Print barcode">📦</button>
+        <button style="background-color:var(--accent-text)" onclick="fetch('/barcode-with-label/{{path}}').then();" title="Print barcode with text label">🏷️</button>
             {% if metadata.photo_path %}
             <aside style="padding:0px; border: none; background-color: inherit">
                 <img src='{{metadata.photo_path}}' style="max-height:250px;">
@@ -112,7 +114,7 @@
         <ul>
             {% for attachment in attachments %}
             <li>
-                    <a href="/download/{{ attachment.path }}" class="button">⇓</a>
+                    <a href="/download/{{attachment.path}}" class="button">{{ attachment.name }}</a>
                     <button href="/delete-attachment/{{ attachment.path }}" onclick="document.getElementById('dialog-delete-{{attachment.name}}').showModal()" style="background-color:var(--accent-text)">🗑️</button>
                     <dialog id="dialog-delete-{{attachment.name}}">
                         <h2>Are you sure?</h2>
@@ -121,7 +123,6 @@
                             <a href="/delete-attachment/{{ attachment.path }}" class="button">Yes</a>
                         </form>
                     </dialog>
-                    <span>{{ attachment.name }}</span>
             </li>
             {% endfor %}
     {% endif %}

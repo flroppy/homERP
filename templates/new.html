@@ -13,9 +13,18 @@
         <label for="content">Content:</label>
         <textarea type="text" id="content" name="content"></textarea>
 
-        <label for="photo">Photo:</label>
+        <label for="photo" style="display:inline">Photo:</label>
         <input type="file" id="photo" name="photo" accept="image/jpeg, image/png"  capture="environment" />
-        <br>
+
+        <label>Label?</label>
+        <!--- Label printing options --->
+        <input type="radio" id="labelYes" name="label" value="yes" checked>
+        <label for="labelYes">Yes</label>
+        <input type="radio" id="labelText" name="label" value="yes, with text">
+        <label for="labelText">Yes, with text</label>
+        <input type="radio" id="labelNo" name="label" value="no">
+        <label for="labelNo">No</label>
+        <br><br>
 
         <!-- Hidden input field to capture the value of 'go' -->
         <input type="hidden" id="go" name="go" value="false">

@@ -2,9 +2,10 @@
 # vim: set foldmethod=indent:
 # main.py
 from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from typing import Dict, Any
 import os
 import yaml
 import uuid
@@ -19,6 +20,13 @@ from typing import List, Optional
 from pylibdmtx.pylibdmtx import encode
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
+from brother_ql.labels import ALL_LABELS, Color
+from brother_ql import BrotherQLRaster, create_label
+from brother_ql.backends import guess_backend, backend_factory
+import subprocess
+from datetime import datetime
+from dulwich import porcelain
+from dulwich.repo import Repo
 
 # Initialize FastAPI app
 app = FastAPI(title="House Inventory App")
@@ -41,7 +49,19 @@ IGNORED_ATTACHMENTS = ['index.md', 'photo.jpg', 'thumbnail.jpg']
 
 UUID_LENGTH = 8
 
-BARCODE_RENDERED_HEIGHT = 106  # pixel height of generated barcode images
+BARCODE_PRINTER_MODEL = 'QL-810W'  # Model number of brother label maker
+# IP address of label maker to print to
+BARCODE_PRINTER_ADDRESS = 'tcp://10.20.30.201'
+BARCODE_PRINTER_TAPE = '12'  # Size of tape being used
+BARCODE_RENDERED_HEIGHT = 106  # pixel height of generated barcode images, 12mm tape
+selected_backend = guess_backend(BARCODE_PRINTER_ADDRESS)
+BACKEND_CLASS = backend_factory(selected_backend)['backend_class']
+label_spec = next(x for x in ALL_LABELS if x.identifier ==
+                  BARCODE_PRINTER_TAPE)
+
+REPO_PATH = HOUSE_ROOT
+SSH_URL = b"ssh://git@gitea.prod.meta:floppy/house.git"
+GIT_AUTHOR = b'homERP <homERP@s-d.space>'
 
 # Helper function to generate a 6-character base64 ID
 
@@ -469,7 +489,8 @@ async def create_item(
         name: str = Form(...),
         content: str = Form(...),
         photo: UploadFile = File(...),
-        go: str = Form(...)
+        go: str = Form(...),
+        label: str = Form(...)
 ):
     folder_name = name
 
@@ -506,6 +527,13 @@ async def create_item(
                 shutil.copyfileobj(photo.file, f)
         else:
             return HTTPException(status_code=503, detail="photo not a photo, item created with no photo")
+
+    if label == 'yes':
+        barcode_img = generate_barcode(item_id)
+        send_to_printer(barcode_img)
+    elif label == 'yes, with text':
+        barcode_img = generate_barcode_with_label(item_id, name)
+        send_to_printer(barcode_img)
 
     redirect_path = Path(parent_path) / folder_name
     if go == 'true':
@@ -550,13 +578,15 @@ async def delete_attachment(path: str):
 
 @app.get("/download/{path:path}")
 async def download_file(path: str):
-    file_path = HOUSE_ROOT / path# Ensure that the resolved absolute path is within the HOUSE_ROOT directory
+    # Ensure that the resolved absolute path is within the HOUSE_ROOT directory
+    file_path = HOUSE_ROOT / path
 
     absolute_path = file_path.resolve()
 
     # Ensure that the resolved absolute path is within the HOUSE_ROOT directory
     if not str(absolute_path).startswith(str(HOUSE_ROOT.resolve())):
-        raise HTTPException(status_code=403, detail="Access to this file is forbidden")
+        raise HTTPException(
+            status_code=403, detail="Access to this file is forbidden")
 
     # Check if the file exists
     if not file_path.exists() or not file_path.is_file():
@@ -620,27 +650,21 @@ async def barcode_file(path: str):
         raise HTTPException(status_code=404, detail="Item not found")
     id = metadata.get("id")
     barcode_img = generate_barcode(id)
+    print('starting send_to_printer')
+    send_to_printer(barcode_img)
     img_byte_arr = BytesIO()
     barcode_img.save(img_byte_arr, format="PNG")
     img_byte_arr.seek(0)
     return StreamingResponse(img_byte_arr, media_type="image/png")
 
 
-@app.get("/barcode-with-label/{path:path}")
-async def barcode_with_label(path: str):
-    item_path = HOUSE_ROOT / path
-    metadata = read_index_file(item_path)
-    item_name = metadata.get("name")
-    item_id = metadata.get("id")
-
-    if not item_id:
-        raise HTTPException(status_code=404, detail="Item ID not found")
-
+def generate_barcode_with_label(item_id, item_name, due_date: str = None):
     # Generate barcode image
     barcode_img = generate_barcode(item_id)
 
     # Set your desired font size
     font = ImageFont.truetype("roboto.ttf", size=BARCODE_RENDERED_HEIGHT//2)
+    font_dd = ImageFont.truetype("roboto.ttf", size=BARCODE_RENDERED_HEIGHT//3)
 
     # Calculate the scaling factor based on the desired height
     barcode_height = barcode_img.height
@@ -656,6 +680,12 @@ async def barcode_with_label(path: str):
     text_bbox = draw.textbbox((0, 0), item_name, font=font)
     text_width = text_bbox[2] - text_bbox[0]
     text_height = text_bbox[3] - text_bbox[1]
+    if due_date:
+        text_bbox = draw.textbbox((0, 0), due_date, font=font_dd)
+        text_width_dd = text_bbox[2] - text_bbox[0]
+        text_height_dd = text_bbox[3] - text_bbox[1]
+        if text_width_dd > text_width:
+            text_width = text_width_dd
 
     # Create a blank canvas for the final image (barcode + label)
     canvas_width = barcode_img.width + text_width + \
@@ -670,13 +700,39 @@ async def barcode_with_label(path: str):
     # Draw the item name label below the barcode
     draw = ImageDraw.Draw(canvas)
 
-    # Position the text dynamically below the barcode
-    text_x = barcode_img.width
-    text_y = (barcode_img.height - text_height) // 2
+    if not due_date:
+        # Position the text dynamically below the barcode
+        text_x = barcode_img.width
+        text_y = (barcode_img.height - text_height) // 2
 
-    draw.text((text_x, text_y), item_name, fill="black", font=font)
+        draw.text((text_x, text_y), item_name, fill="black", font=font)
+    else:
+        # Position the text dynamically below the barcode
+        text_x = barcode_img.width
+        text_y = (barcode_img.height) // 2
+
+        draw.text((text_x, 0), item_name, fill="black", font=font)
+        draw.text((text_x, text_y), due_date, fill="black", font=font_dd)
+
 
     # Save the final image to a BytesIO stream
+    canvas = canvas.transpose(Image.ROTATE_90)
+
+    return canvas
+
+
+@app.get("/barcode-with-label/{path:path}")
+async def barcode_with_label(path: str):
+    item_path = HOUSE_ROOT / path 
+    metadata = read_index_file(item_path)
+    item_name = metadata.get("name")
+    item_id = metadata.get("id")
+
+    if not item_id:
+        raise HTTPException(status_code=404, detail="Item ID not found")
+
+    canvas = generate_barcode_with_label(item_id, item_name)
+    send_to_printer(canvas)
     img_byte_arr = BytesIO()
     canvas.save(img_byte_arr, format="PNG")
     img_byte_arr.seek(0)
@@ -816,6 +872,7 @@ async def move_item_select(request: Request, item_path: str = ""):
         }
     )
 
+
 @app.post("/move/{item_path:path}")
 async def move_item(request: Request, item_path: str, destination: str = Form(...), by_id: str = Form(...)):
     item_path_obj = HOUSE_ROOT / item_path
@@ -834,17 +891,90 @@ async def move_item(request: Request, item_path: str, destination: str = Form(..
 
     # Ensure the destination is a directory
     if not destination_path_obj.is_dir():
-        raise HTTPException(status_code=400, detail="Destination must be a directory")
+        raise HTTPException(
+            status_code=400, detail="Destination must be a directory")
 
     try:
         # Move the item to the selected destination
         new_location = destination_path_obj / item_path_obj.name
         item_path_obj.rename(new_location)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error moving item: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error moving item: {str(e)}")
 
     # Redirect to the new location
     return RedirectResponse(url=f"/browse/{destination}", status_code=303)
+
+    # Convert the image to monochrome (1 bit) for the printer
+    image = image.convert('1')
+
+    # Set up the network backend (using IP address of the printer)
+    backend = get_backend('network')
+
+    # Connect to the printer via its IP address (replace with your printer's IP address)
+    # Default port for Brother printers is 9100
+    backend.connect((BARCODE_PRINTER_IP, 9100))
+
+    # Set up the rasterizer for the Brother QL printer
+    printer = BrotherQLRaster(BARCODE_PRINTER_MODEL)
+
+    # Setup the printer with the label size
+    printer.setup(BARCODE_PRINTER_MODE, label_size[BARCODE_PRINTER_TAPE])
+
+    # Convert the image into a format suitable for the printer
+    raster_image = printer.convert(image)
+
+    # Print the image
+    printer.print(raster_image, backend)
+
+    # Close the connection after printing
+    backend.close()
+
+# see https://github.com/sam159/brotherql_grocylabels/blob/main/app/__init__.py
+
+
+def send_to_printer(image: Image):
+    bql = BrotherQLRaster(BARCODE_PRINTER_MODEL)
+
+    redLabel = label_spec.color == Color.BLACK_RED_WHITE
+
+    create_label(
+        bql,
+        image,
+        BARCODE_PRINTER_TAPE,
+        red=redLabel
+    )
+
+    print('Getting backend')
+    be = BACKEND_CLASS(BARCODE_PRINTER_ADDRESS)
+    print('Sending to printer')
+    be.write(bql.data)
+    print('barcode send!')
+    del be
+
+
+@app.post("/print_grocy")
+async def print_grocy(payload: Dict[Any, Any]):
+    response = {"success": "false"}
+    print(payload)
+
+
+    try:
+        grocycode = payload['grocycode']
+        product = payload['product']
+        due_date = payload['due_date']
+        if due_date:
+            canvas = generate_barcode_with_label(grocycode, product, due_date)
+        else:
+            canvas = generate_barcode_with_label(grocycode, product)
+        print(grocycode)
+        send_to_printer(canvas)
+        response = {"success": "true"}
+    except:
+        pass
+
+
+    return response
 
 # Run the app
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 _site/
 house/
+House/
 __pycache__/
 env/
 .env
@@ -7,3 +8,6 @@ house_bak/
 barcode_output.png
 equipment_output/
 barcodes.csv
+id_rsa
+id_rsa.pub
+ssh_config

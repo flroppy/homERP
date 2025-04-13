@@ -6,7 +6,7 @@
 
 {% block content %}
     <h3>Move {{item_name}}</h3>
-    <form action="/move/{{ item_path }}" method="post">
+    <form action="/move/{{ item_path }}" method="post" id="move-item">
         <label for="by-id">Destination ID:</label>
         <input type="text" id="by_id" name="by_id" placeholder="ID" autofocus>
         <br>
@@ -43,5 +43,18 @@
                 document.getElementById('destination').value = firstVisibleOption.value;
             }
         }
+
+        // Get the form and input field elements
+        const form = document.getElementById('move-item');
+        const inputField = document.getElementById('by_id');
+
+        // Add event listener for input changes
+        inputField.addEventListener('input', function() {
+          // Check if the input length is 8 characters
+          if (inputField.value.length === 8) {
+            // Submit the form if length is 8 characters
+            form.submit();
+          }
+        });
     </script>
 {% endblock %}
