@@ -6,9 +6,6 @@ WORKDIR /app
 
 # Copy the current directory contents into the container at /app
 COPY ./requirements.txt /app/requirements.txt
-COPY ./id_rsa /root/.ssh/id_rsa
-COPY ./id_rsa.pub /root/.ssh/id_rsa.pub
-COPY ./ssh_config /root/.ssh/config
 
 RUN apt-get update && apt-get install -y libdmtx-dev ssh iputils-ping
 # Install any needed packages specified in requirements.txt
