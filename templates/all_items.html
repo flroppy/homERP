@@ -56,7 +56,7 @@
             <li class="{%if item.sub_items%}{% if level >= 0 %}collapsed{% else %}expanded{% endif %}{% endif %}">
                 <span class="collapsible" {%if item.sub_items%}onclick="toggleCollapse(this)"{%endif%}>
                         {% if item.photo_path %}
-                            <img src="/thumbnail/{{item.path}}" style="height:3rem">
+                            <img src="/thumbnail/{{item.path}}" {% if level >=1 %}loading="lazy"{%else%}loading="eager"{%endif%} style="height:3rem">
                         {% endif %}
                         {{ item.name }}<a href="/browse/{{ item.path }}"> 🔗</a>
                     </span>
@@ -73,6 +73,7 @@
         <!-- Render the items -->
         {{ render_items(items) }}
     </ul>
+    <p>Total Items: {{ total_items}}</p>
 
     <script>
         // Toggle collapsible items on click

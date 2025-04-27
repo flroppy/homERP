@@ -292,11 +292,11 @@ async def browse(request: Request, path: str = ""):
 @app.get("/all-items", response_class=HTMLResponse)
 async def all_items(request: Request):
 
-    def build_item_hierarchy(directory_path):
+    def build_item_hierarchy(directory_path, total=0):
         items = []
 
         if not directory_path.exists():
-            return items
+            return items,total
 
         # TODO: Make this a helper function
         for path in directory_path.iterdir():
@@ -304,22 +304,26 @@ async def all_items(request: Request):
                 # This is a directory, add it and recursively fetch sub-items
                 try:
                     metadata = read_index_file(path)
+                    total+=1
+                    sub_items,total=build_item_hierarchy(path,total)
                     items.append({
                         "path": path.relative_to(HOUSE_ROOT),
                         "name": metadata.get("name", path.name),
                         "id": metadata.get("id", ""),
                         "photo_path": metadata.get("photo_path", ""),
                         # Recursively get sub-items
-                        "sub_items": build_item_hierarchy(path)
+                        "sub_items": sub_items
                     })
                 except Exception:
                     # If we can't read the metadata, still list the directory
+                    total+=1
+                    sub_items,total=build_item_hierarchy(path,total)
                     items.append({
                         "path": path.relative_to(HOUSE_ROOT),
                         "name": path.name,
                         "id": "",
                         # Recursively get sub-items
-                        "sub_items": build_item_hierarchy(path)
+                        "sub_items": sub_items
                     })
             # elif path.is_file() and path.name not in ["index.md", "barcode.png"]:
             #    # This is a file (attachment), we can optionally list them too
@@ -330,16 +334,17 @@ async def all_items(request: Request):
             #        "sub_items": []  # No sub-items for files
             #    })
             items = sorted(items, key=lambda x: x['name'])
-        return items
+        return items,total
 
     # Get the top-level items and their sub-items
-    all_items_hierarchy = build_item_hierarchy(HOUSE_ROOT)
+    all_items_hierarchy,total = build_item_hierarchy(HOUSE_ROOT)
 
     return templates.TemplateResponse(
         "all_items.html",
         {
             "request": request,
-            "items": all_items_hierarchy
+            "items": all_items_hierarchy,
+            "total_items": total
         }
     )
 
@@ -607,7 +612,7 @@ async def download_file(path: str):
 
     if not thumbnail_path.exists():
         try:
-            im = Image.open(file_path)
+            im = Image.open(file_path, formats=['PNG', 'JPEG'])
             im = ImageOps.exif_transpose(im)
             # Get the original width and height
             width, height = im.size
@@ -622,6 +627,7 @@ async def download_file(path: str):
             bottom = (height + new_dim) // 2
             im = im.crop((left, top, right, bottom))
             im.thumbnail((128, 128))
+            im = im.convert('RGB') # allow save as jpeg
             im.save(thumbnail_path, format="JPEG")
         except IOError:
             raise HTTPException(
