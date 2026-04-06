@@ -7,8 +7,9 @@ services:
     volumes:
       - .:/app  # Mount the current directory to the container's /app directory
     ports:
-      - "8000:8000"  # Map port 5000 on the host to port 5000 in the container
+      - "5000:8000"  # Map port 5000 on the host to port 5000 in the container
     environment:
       - PYTHONUNBUFFERED=1  # Ensure logs are printed directly to the console (useful for debugging)
-    network_mode: host
+    #network_mode: host
     #command: python app.py  # Command to run the application
+    restart: unless-stopped
