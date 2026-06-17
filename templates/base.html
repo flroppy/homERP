@@ -83,7 +83,28 @@
         {% block content %}{% endblock %}
     </main>
     <footer>
-        <p><a href="/all-items">All Items</a></p>{% block footer %}{% endblock %}
+        <p><a href="/all-items">All Items</a> &nbsp;|&nbsp; <span id="git-status"></span></p>
+        {% block footer %}{% endblock %}
     </footer>
+    <script>
+        fetch('/git-status')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.configured) return;
+                const el = document.getElementById('git-status');
+                const pending = data.unstaged?.length || data.untracked?.length || data.staged?.length;
+                if (pending) {
+                    el.textContent = '⚠ backup pending';
+                    el.title = 'Uncommitted changes in data directory';
+                } else if (data.last_commit) {
+                    const msg = data.last_commit.length > 60
+                        ? data.last_commit.slice(0, 60) + '…'
+                        : data.last_commit;
+                    el.textContent = '✓ ' + msg;
+                    el.title = data.last_commit;
+                }
+            })
+            .catch(() => {});
+    </script>
 </body>
 </html>
