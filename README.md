@@ -125,4 +125,3 @@ Write a script to bulk edit grocy
 
 ### Code Quality
 - **Extract `build_item_hierarchy`** (`main.py:298`) — currently defined inline inside the `/all-items` route handler; should be a top-level helper
-- **CSS technical debt** — styles are written inline on HTML elements throughout templates; should be moved to a stylesheet
