@@ -24,9 +24,29 @@ All settings are environment variables, read from `.env`. The minimum you need t
 | `BARCODE_PRINTER_ADDRESS` | `tcp://10.20.30.201` | Printer address; leave empty to disable printing |
 | `BARCODE_PRINTER_TAPE` | `12` | Tape width in mm |
 | `BARCODE_RENDERED_HEIGHT` | `106` | Barcode image height in pixels (matches tape width) |
-| `GIT_SSH_URL` | _(empty)_ | Remote git URL for auto-backup (not yet implemented) |
+| `GIT_REMOTE_URL` | _(empty)_ | Remote git URL for auto-backup; leave empty to disable |
+| `GIT_USERNAME` | _(empty)_ | Git username for HTTPS auth |
+| `GIT_TOKEN` | _(empty)_ | Personal access token for HTTPS auth |
 | `GIT_AUTHOR` | `homERP <homERP@s-d.space>` | Git author for backup commits |
 | `GROCY_API_KEY` | _(empty)_ | API key for Grocy label printing integration |
+
+### Git backup
+
+Every create/edit/delete/move/upload automatically commits and pushes to a remote git repo. Setup takes about 5 minutes:
+
+1. Create a repo on Gitea, GitHub, etc.
+2. Generate a personal access token with repo write access
+3. Add to `.env`:
+   ```
+   GIT_REMOTE_URL=https://gitea.example.com/user/house.git
+   GIT_USERNAME=myuser
+   GIT_TOKEN=mytoken
+   GIT_AUTHOR=My Name <me@example.com>
+   ```
+4. Rebuild/restart the container
+5. Done — check `GET /git-status` to confirm it's working
+
+Leave `GIT_REMOTE_URL` empty to disable backup entirely (the default).
 
 ### Docker
 
@@ -103,7 +123,6 @@ Write a script to bulk edit grocy
 ### Features
 - **Rename the project** — "homERP" is a placeholder; see Name Ideas below
 - **User-defined tags / key-value pairs** — allow arbitrary metadata on items beyond just `id`; useful for aggregating info (e.g. value, size, category)
-- **Git auto-backup** — `dulwich` is already imported and constants (`SSH_URL`, `GIT_AUTHOR`) are defined; `proposal.md` has a full implementation plan ready to go
 - **Display attachments in browser** — for supported types (PDF, images, text), offer an inline view rather than always forcing a download
 - **Rename attachments** — currently attachments can only be deleted; allow renaming them in the UI
 

@@ -23,14 +23,17 @@ from fuzzywuzzy import process
 from brother_ql.labels import ALL_LABELS, Color
 from brother_ql import BrotherQLRaster, create_label
 from brother_ql.backends import guess_backend, backend_factory
-import subprocess
-from datetime import datetime
-from dulwich import porcelain
-from dulwich.repo import Repo
+from contextlib import asynccontextmanager
 from config import settings
+import git_backup
+
+@asynccontextmanager
+async def lifespan(app):
+    git_backup.ensure_repo(HOUSE_ROOT)
+    yield
 
 # Initialize FastAPI app
-app = FastAPI(title="House Inventory App")
+app = FastAPI(title="House Inventory App", lifespan=lifespan)
 
 # Mount static files directory
 # app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -431,6 +434,7 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(defaul
         else:
             return HTTPException(status_code=503, detail="photo not a photo, item edited with no photo")
 
+    git_backup.git_auto_backup("update", name, str(path), HOUSE_ROOT)
     return RedirectResponse(url=f"/browse/{path}", status_code=303)
 
 
@@ -490,7 +494,7 @@ async def delete_item(parent_path: str):
         raise HTTPException(
             status_code=500, detail=f"Error deleting item: {str(e)}")
 
-    # Redirect to the parent of the item (the parent directory of the deleted item)
+    git_backup.git_auto_backup("delete", os.path.basename(parent_path), parent_path, HOUSE_ROOT)
     return RedirectResponse(url=f"/browse/{parent_item_path.relative_to(HOUSE_ROOT)}", status_code=303)
 
 
@@ -548,6 +552,7 @@ async def create_item(
         barcode_img = generate_barcode_with_label(item_id, name)
         send_to_printer(barcode_img)
 
+    git_backup.git_auto_backup("create", folder_name, str(Path(parent_path) / folder_name), HOUSE_ROOT)
     redirect_path = Path(parent_path) / folder_name
     if go == 'true':
         return RedirectResponse(url=f"/browse/{redirect_path}", status_code=303)
@@ -569,6 +574,7 @@ async def upload_file(path: str, file: UploadFile = File(...)):
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
+    git_backup.git_auto_backup("upload", os.path.basename(path), path, HOUSE_ROOT)
     return RedirectResponse(url=f"/browse/{path}", status_code=303)
 
 
@@ -586,6 +592,7 @@ async def delete_attachment(path: str):
     # Delete the file
     os.remove(file_path)
 
+    git_backup.git_auto_backup("delete_attachment", os.path.basename(parent_path), parent_path, HOUSE_ROOT)
     return RedirectResponse(url=f"/browse/{parent_path}", status_code=303)
 
 
@@ -916,7 +923,7 @@ async def move_item(request: Request, item_path: str, destination: str = Form(de
         raise HTTPException(
             status_code=500, detail=f"Error moving item: {str(e)}")
 
-    # Redirect to the new location
+    git_backup.git_auto_backup("move", item_path_obj.name, str(destination), HOUSE_ROOT)
     return RedirectResponse(url=f"/browse/{destination}", status_code=303)
 
 # see https://github.com/sam159/brotherql_grocylabels/blob/main/app/__init__.py
@@ -957,6 +964,11 @@ async def print_grocy(payload: Dict[Any, Any]):
 
 
     return response
+
+@app.get("/git-status")
+async def git_status_endpoint():
+    return git_backup.git_status(HOUSE_ROOT)
+
 
 # Run the app
 if __name__ == "__main__":

@@ -9,7 +9,9 @@ class Settings(BaseSettings):
     barcode_printer_address: str = "tcp://10.20.30.201"
     barcode_printer_tape: str = "12"
     barcode_rendered_height: int = 106
-    git_ssh_url: str = ""
+    git_remote_url: str = ""
+    git_username: str = ""
+    git_token: str = ""
     git_author: str = "homERP <homERP@s-d.space>"
     grocy_api_key: str = ""
 
