@@ -113,18 +113,48 @@
     {% if attachments %}
         <ul>
             {% for attachment in attachments %}
+            {% set ext = attachment.name.rsplit('.', 1)[-1].lower() if '.' in attachment.name else '' %}
+            {% set is_image = ext in ['jpg', 'jpeg', 'png', 'gif', 'webp'] %}
+            {% set is_pdf = ext == 'pdf' %}
+            {% set is_text = ext in ['txt', 'md', 'csv', 'json', 'yaml', 'yml', 'log'] %}
             <li>
+                {% if is_image or is_pdf or is_text %}
+                <details ontoggle="if(this.open){var el=this.querySelector('[data-src]');if(el&&!el.getAttribute('src'))el.src=el.dataset.src}">
+                    <summary>
+                        {{ attachment.name }}
+                        <a href="/download/{{attachment.path}}" class="button" style="font-size:0.8em;padding:0.2em 0.5em">⬇ download</a>
+                    </summary>
+                    {% if is_image %}
+                        <img data-src="/view/{{attachment.path}}" style="max-width:100%;margin-top:0.5rem">
+                    {% elif is_pdf %}
+                        <embed data-src="/view/{{attachment.path}}" type="application/pdf" width="100%" height="500px" style="margin-top:0.5rem">
+                    {% elif is_text %}
+                        <iframe data-src="/view/{{attachment.path}}" width="100%" height="300px" style="border:1px solid var(--border);margin-top:0.5rem"></iframe>
+                    {% endif %}
+                </details>
+                {% else %}
                     <a href="/download/{{attachment.path}}" class="button">{{ attachment.name }}</a>
-                    <button href="/delete-attachment/{{ attachment.path }}" onclick="document.getElementById('dialog-delete-{{attachment.name}}').showModal()" style="background-color:var(--accent-text)">🗑️</button>
-                    <dialog id="dialog-delete-{{attachment.name}}">
-                        <h2>Are you sure?</h2>
-                        <form method="dialog">
-                            <button>Cancel</button>
-                            <a href="/delete-attachment/{{ attachment.path }}" class="button">Yes</a>
-                        </form>
-                    </dialog>
+                {% endif %}
+                <button onclick="document.getElementById('dialog-rename-{{loop.index}}').showModal()" title="Rename">✏️</button>
+                <dialog id="dialog-rename-{{loop.index}}">
+                    <h3>Rename attachment</h3>
+                    <form action="/rename-attachment/{{attachment.path}}" method="post">
+                        <input type="text" name="new_name" value="{{ attachment.name }}" required>
+                        <button type="submit">Rename</button>
+                        <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+                    </form>
+                </dialog>
+                <button onclick="document.getElementById('dialog-delete-{{loop.index}}').showModal()" style="background-color:var(--accent-text)" title="Delete">🗑️</button>
+                <dialog id="dialog-delete-{{loop.index}}">
+                    <h2>Are you sure?</h2>
+                    <form method="dialog">
+                        <button>Cancel</button>
+                        <a href="/delete-attachment/{{ attachment.path }}" class="button">Yes</a>
+                    </form>
+                </dialog>
             </li>
             {% endfor %}
+        </ul>
     {% endif %}
         <form action="/upload/{{ path }}" method="post" enctype="multipart/form-data" style="display: inline-block;">
             <input type="file" name="file" required>

@@ -122,8 +122,6 @@ Write a script to bulk edit grocy
 ### Features
 - **Rename the project** — "homERP" is a placeholder; see Name Ideas below
 - **User-defined tags / key-value pairs** — allow arbitrary metadata on items beyond just `id`; useful for aggregating info (e.g. value, size, category)
-- **Display attachments in browser** — for supported types (PDF, images, text), offer an inline view rather than always forcing a download
-- **Rename attachments** — currently attachments can only be deleted; allow renaming them in the UI
 
 ### Code Quality
 - **Extract `build_item_hierarchy`** (`main.py:298`) — currently defined inline inside the `/all-items` route handler; should be a top-level helper

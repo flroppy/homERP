@@ -199,6 +199,31 @@ def test_download_path_traversal_blocked(client, data_dir):
     assert r.status_code in (400, 403, 404)
 
 
+def test_view_attachment_inline(client, item, data_dir):
+    content = b'hello world'
+    client.post(f'/upload/{item}', files={'file': ('note.txt', content, 'text/plain')})
+    r = client.get(f'/view/{item}/note.txt')
+    assert r.status_code == 200
+    assert r.content == content
+    assert 'attachment' not in r.headers.get('content-disposition', '')
+
+
+def test_rename_attachment(client, item, data_dir):
+    client.post(f'/upload/{item}', files={'file': ('old.txt', b'x', 'text/plain')})
+    r = client.post(f'/rename-attachment/{item}/old.txt', data={'new_name': 'new.txt'})
+    assert r.status_code == 200
+    assert (data_dir / item / 'new.txt').exists()
+    assert not (data_dir / item / 'old.txt').exists()
+
+
+def test_rename_attachment_conflict(client, item, data_dir):
+    for name in ('a.txt', 'b.txt'):
+        client.post(f'/upload/{item}', files={'file': (name, b'x', 'text/plain')})
+    r = client.post(f'/rename-attachment/{item}/a.txt', data={'new_name': 'b.txt'})
+    assert r.status_code == 409
+    assert (data_dir / item / 'a.txt').exists()
+
+
 # --- Move ---
 
 def test_move_item(client, data_dir):

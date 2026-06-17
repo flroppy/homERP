@@ -615,6 +615,36 @@ async def download_file(path: str):
     return FileResponse(file_path, filename=file_path.name)
 
 
+@app.get("/view/{path:path}")
+async def view_file(path: str):
+    """Serve a file inline (no Content-Disposition: attachment) so the browser can render it."""
+    file_path = HOUSE_ROOT / path
+    if not str(file_path.resolve()).startswith(str(HOUSE_ROOT.resolve())):
+        raise HTTPException(status_code=403, detail="Access to this file is forbidden")
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path)
+
+
+@app.post("/rename-attachment/{path:path}")
+async def rename_attachment(path: str, new_name: str = Form(...)):
+    file_path = HOUSE_ROOT / path
+    if not str(file_path.resolve()).startswith(str(HOUSE_ROOT.resolve())):
+        raise HTTPException(status_code=403, detail="Access to this file is forbidden")
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    new_name = new_name.strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Name cannot be empty")
+    new_path = file_path.parent / new_name
+    if new_path.exists():
+        raise HTTPException(status_code=409, detail="A file with that name already exists")
+    file_path.rename(new_path)
+    parent_path = str(file_path.parent.relative_to(HOUSE_ROOT))
+    git_backup.git_auto_backup("upload", os.path.basename(parent_path), parent_path, HOUSE_ROOT)
+    return RedirectResponse(url=f"/browse/{parent_path}", status_code=303)
+
+
 @app.get("/thumbnail/{path:path}")
 async def download_file(path: str):
     item_dir = HOUSE_ROOT / path
