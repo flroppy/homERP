@@ -85,16 +85,20 @@ def git_status(data_dir: Path) -> dict:
     try:
         repo = Repo(str(data_dir))
         status = porcelain.status(repo)
-        log = list(porcelain.log(repo, max_entries=1))
-        last_commit = log[0].message.decode().strip() if log else None
+
+        # porcelain.log() prints to stdout by default; use the walker directly
+        commits = list(repo.get_walker(max_entries=1))
+        last_commit = commits[0].commit.message.decode().strip() if commits else None
+
+        staged = status.staged or {}
         return {
             "configured": True,
             "last_commit": last_commit,
-            "staged": [f.decode() for f in (status.staged.get(b"add", []) +
-                                             status.staged.get(b"modify", []) +
-                                             status.staged.get(b"delete", []))],
-            "unstaged": [f.decode() for f in status.unstaged],
-            "untracked": [f.decode() for f in status.untracked],
+            "staged": [f.decode() for f in (
+                staged.get(b"add", []) + staged.get(b"modify", []) + staged.get(b"delete", [])
+            )],
+            "unstaged": [f.decode() for f in (status.unstaged or [])],
+            "untracked": [f.decode() for f in (status.untracked or [])],
         }
     except Exception as e:
         return {"configured": True, "error": str(e)}
