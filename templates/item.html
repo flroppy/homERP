@@ -107,11 +107,16 @@
                 </div>
                 {% endif %}
 
+                {% set stem = attachment.name.rsplit('.', 1)[0] if '.' in attachment.name else attachment.name %}
+                {% set ext = '.' + attachment.name.rsplit('.', 1)[1] if '.' in attachment.name else '' %}
                 <dialog id="dialog-rename-{{loop.index}}">
                     <h3>Rename attachment</h3>
                     <form action="/rename-attachment/{{attachment.path}}" method="post">
                         <label for="rename-input-{{loop.index}}">New name</label>
-                        <input id="rename-input-{{loop.index}}" type="text" name="new_name" value="{{ attachment.name }}" required>
+                        <div style="display:flex;align-items:center;gap:0.25rem">
+                            <input id="rename-input-{{loop.index}}" type="text" name="new_name" value="{{ stem }}" required style="margin-top:0">
+                            {% if ext %}<span style="white-space:nowrap;color:var(--muted)">{{ ext }}</span>{% endif %}
+                        </div>
                         <button type="submit">Rename</button>
                         <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
                     </form>

@@ -216,6 +216,14 @@ def test_rename_attachment(client, item, data_dir):
     assert not (data_dir / item / 'old.txt').exists()
 
 
+def test_rename_attachment_preserves_extension(client, item, data_dir):
+    client.post(f'/upload/{item}', files={'file': ('doc.txt', b'x', 'text/plain')})
+    r = client.post(f'/rename-attachment/{item}/doc.txt', data={'new_name': 'doc.pdf'})
+    assert r.status_code == 200
+    assert (data_dir / item / 'doc.txt').exists()
+    assert not (data_dir / item / 'doc.pdf').exists()
+
+
 def test_rename_attachment_conflict(client, item, data_dir):
     for name in ('a.txt', 'b.txt'):
         client.post(f'/upload/{item}', files={'file': (name, b'x', 'text/plain')})

@@ -648,8 +648,12 @@ async def rename_attachment(path: str, new_name: str = Form(...)):
     new_name = new_name.strip()
     if not new_name:
         raise HTTPException(status_code=400, detail="Name cannot be empty")
+    # Always preserve the original extension regardless of what was submitted
+    original_ext = file_path.suffix
+    new_stem = Path(new_name).stem
+    new_name = new_stem + original_ext
     new_path = file_path.parent / new_name
-    if new_path.exists():
+    if new_path.exists() and new_path != file_path:
         raise HTTPException(status_code=409, detail="A file with that name already exists")
     file_path.rename(new_path)
     parent_path = str(file_path.parent.relative_to(HOUSE_ROOT))
