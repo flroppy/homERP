@@ -2,37 +2,12 @@
 
 {% block title %}{{ metadata.name }} - House Inventory{% endblock %}
 
-{% block style %}
-    <style>
-        /* Extend the .button class from simple.css */
-        .button-item {
-            margin-right:5px;
-            padding:0px !important;
-            min-height:3rem;
-            align-items: center;
-            vertical-align: middle;
-            display:inline-flex;
-            border:none !important;
-            flex-shrink:0;
-            flex-wrap: wrap;
-        }
-
-        /* Style for the thumbnail image */
-        .button-thumbnail img {
-            height: 4rem; /* Thumbnail height */
-            margin-right: 10px; /* Space between the thumbnail and text */
-            vertical-align: middle;
-        }
-    </style>
-{% endblock %}
-
 {% block header %}
-    <nav>
+    <nav aria-label="breadcrumb">
         <ul class="breadcrumb">
             {% for crumb in breadcrumbs %}
                 <li>
                     {% if loop.last %}
-                    <!---{{ crumb.name }}--->
                         <a aria-current="page" href="/browse/{{ crumb.path }}">{{ crumb.name }}</a>
                     {% else %}
                         <a href="/browse/{{ crumb.path }}">{{ crumb.name }}</a>
@@ -45,145 +20,132 @@
 
 {% block content %}
     <section>
-    <header>
-        <h1 style="display:inline-block;margin:0px;vertical-align:bottom;line-height:1">{{ metadata.name }}</h1>
-        <button style="background-color:var(--accent-text)" onclick="fetch('/barcode/{{path}}').then();" title="Print barcode">📦</button>
-        <button style="background-color:var(--accent-text)" onclick="fetch('/barcode-with-label/{{path}}').then();" title="Print barcode with text label">🏷️</button>
+        <div class="item-header">
+            <h1>{{ metadata.name }}</h1>
             {% if metadata.photo_path %}
-            <aside style="padding:0px; border: none; background-color: inherit">
-                <img src='{{metadata.photo_path}}' style="max-height:250px;">
-            </aside>
+                <img src="{{ metadata.photo_path }}" class="item-thumbnail" alt="Photo of {{ metadata.name }}">
             {% endif %}
-    </header>
+        </div>
 
         {{ metadata.html_content | safe }}
-        <a href="/edit/{{ path }}" class="button">Edit</a>
-        <a href="/move/{{ path }}" class="button">Move</a>
-        <dialog id="delete_dialog">
-            <h3>Are you sure?</h3>
-            <p>All sub items will be moved in to parent item.</p>
-            <form action="/delete/{{ path }}" method="POST" style="display:inline-block">
-                <button type="submit">Delete</button>
+
+        <div class="item-actions">
+            <a href="/edit/{{ path }}">Edit</a>
+            <a href="/move/{{ path }}">Move</a>
+            <button aria-label="Print barcode for {{ metadata.name }}" title="Print barcode" onclick="fetch('/barcode/{{path}}').then()">📦</button>
+            <button aria-label="Print barcode with label for {{ metadata.name }}" title="Print barcode with label" onclick="fetch('/barcode-with-label/{{path}}').then()">🏷️</button>
+            <button aria-label="Delete {{ metadata.name }}" title="Delete" class="danger" onclick="document.getElementById('delete-dialog').showModal()">🗑️</button>
+        </div>
+
+        <dialog id="delete-dialog">
+            <h2>Delete {{ metadata.name }}?</h2>
+            <p>All sub-items will be moved to the parent.</p>
+            <form action="/delete/{{ path }}" method="POST" style="display:inline">
+                <button type="submit" class="danger">Delete</button>
             </form>
-            <button id="delete_close" autofocus>Cancel</button>
+            <button autofocus onclick="document.getElementById('delete-dialog').close()">Cancel</button>
         </dialog>
-        <button id="delete_show" style="background-color:var(--accent-text)">🗑️</button>
-        <script>
-            const dialog = document.getElementById("delete_dialog");
-            const showButton = document.getElementById("delete_show");
-            const closeButton = document.getElementById("delete_close");
-
-            // "Show the dialog" button opens the dialog modally
-            showButton.addEventListener("click", () => {
-              dialog.showModal();
-            });
-
-            // "Close" button closes the dialog
-            closeButton.addEventListener("click", () => {
-              dialog.close();
-            });
-        </script>
-    {% if items %}
     </section>
 
+    {% if items %}
     <section>
-        <h3>Inside</h2>
-    <div style="display:flex; flex-wrap:wrap">
+        <h3>Inside</h3>
+        <div class="items-grid">
             {% for item in items %}
+                <div class="item-card">
                     {% if item.photo_path %}
-                        <a href="/browse/{{item.path}}" class="button button-item button-thumbnail">
-                            <img src="/thumbnail/{{item.path}}">{{item.name}}&nbsp;
+                        <a href="/browse/{{item.path}}">
+                            <img src="/thumbnail/{{item.path}}" alt="{{ item.name }}" loading="lazy" style="max-height:4rem;width:auto">
                         </a>
-                    {% else %}
-                        <a href="/browse/{{ item.path }}" class="button button-item">&nbsp;{{item.name}}&nbsp;</a>
                     {% endif %}
+                    <a href="/browse/{{ item.path }}">{{ item.name }}</a>
+                </div>
             {% endfor %}
-    </div>
-            <br>
-        <br><a href="/new/{{ path }}" class="button">Add New Item</a>
+        </div>
+        <a href="/new/{{ path }}">Add New Item</a>
     </section>
     {% else %}
-    <br>
-        <a href="/new/{{ path }}" class="button">Add New Inside</a>
+    <section>
+        <a href="/new/{{ path }}">Add New Item Inside</a>
     </section>
     {% endif %}
 
     <section>
-        <h3>Attachments</h2>
-    {% if attachments %}
-        <ul>
+        <h3>Attachments</h3>
+        {% if attachments %}
+        <ul class="attachments-list">
             {% for attachment in attachments %}
             {% set ext = attachment.name.rsplit('.', 1)[-1].lower() if '.' in attachment.name else '' %}
             {% set is_image = ext in ['jpg', 'jpeg', 'png', 'gif', 'webp'] %}
             {% set is_pdf = ext == 'pdf' %}
             {% set is_text = ext in ['txt', 'md', 'csv', 'json', 'yaml', 'yml', 'log'] %}
-            <li>
+            <li class="attachment-row">
                 {% if is_image or is_pdf or is_text %}
                 <details ontoggle="if(this.open){var el=this.querySelector('[data-src]');if(el&&!el.getAttribute('src'))el.src=el.dataset.src}">
                     <summary>
                         {{ attachment.name }}
-                        <a href="/download/{{attachment.path}}" class="button" style="font-size:0.8em;padding:0.2em 0.5em">⬇ download</a>
+                        <a href="/download/{{attachment.path}}" aria-label="Download {{ attachment.name }}">⬇</a>
                     </summary>
                     {% if is_image %}
-                        <img data-src="/view/{{attachment.path}}" style="max-width:100%;margin-top:0.5rem">
+                        <img data-src="/view/{{attachment.path}}" alt="{{ attachment.name }}" style="max-width:100%;margin-top:0.5rem">
                     {% elif is_pdf %}
                         <embed data-src="/view/{{attachment.path}}" type="application/pdf" width="100%" height="500px" style="margin-top:0.5rem">
                     {% elif is_text %}
-                        <iframe data-src="/view/{{attachment.path}}" width="100%" height="300px" style="border:1px solid var(--border);margin-top:0.5rem"></iframe>
+                        <iframe data-src="/view/{{attachment.path}}" width="100%" height="300px" style="border:1px solid var(--border);margin-top:0.5rem" title="{{ attachment.name }}"></iframe>
                     {% endif %}
                 </details>
                 {% else %}
-                    <a href="/download/{{attachment.path}}" class="button">{{ attachment.name }}</a>
+                    <span>{{ attachment.name }}</span>
+                    <a href="/download/{{attachment.path}}" aria-label="Download {{ attachment.name }}">⬇</a>
                 {% endif %}
-                <button onclick="document.getElementById('dialog-rename-{{loop.index}}').showModal()" title="Rename">✏️</button>
+                <button class="btn-icon" aria-label="Rename {{ attachment.name }}" onclick="document.getElementById('dialog-rename-{{loop.index}}').showModal()">✏️</button>
+                <button class="btn-icon danger" aria-label="Delete {{ attachment.name }}" onclick="document.getElementById('dialog-delete-{{loop.index}}').showModal()">🗑️</button>
+
                 <dialog id="dialog-rename-{{loop.index}}">
                     <h3>Rename attachment</h3>
                     <form action="/rename-attachment/{{attachment.path}}" method="post">
-                        <input type="text" name="new_name" value="{{ attachment.name }}" required>
+                        <label for="rename-input-{{loop.index}}">New name</label>
+                        <input id="rename-input-{{loop.index}}" type="text" name="new_name" value="{{ attachment.name }}" required>
                         <button type="submit">Rename</button>
                         <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
                     </form>
                 </dialog>
-                <button onclick="document.getElementById('dialog-delete-{{loop.index}}').showModal()" style="background-color:var(--accent-text)" title="Delete">🗑️</button>
+
                 <dialog id="dialog-delete-{{loop.index}}">
-                    <h2>Are you sure?</h2>
-                    <form method="dialog">
-                        <button>Cancel</button>
-                        <a href="/delete-attachment/{{ attachment.path }}" class="button">Yes</a>
-                    </form>
+                    <h3>Delete {{ attachment.name }}?</h3>
+                    <a href="/delete-attachment/{{ attachment.path }}" class="danger">Delete</a>
+                    <button onclick="this.closest('dialog').close()">Cancel</button>
                 </dialog>
             </li>
             {% endfor %}
         </ul>
-    {% endif %}
-        <form action="/upload/{{ path }}" method="post" enctype="multipart/form-data" style="display: inline-block;">
-            <input type="file" name="file" required>
-            <button type="submit">Upload Attachment</button>
+        {% endif %}
+        <form action="/upload/{{ path }}" method="post" enctype="multipart/form-data">
+            <label for="upload-file">Upload attachment</label>
+            <input type="file" id="upload-file" name="file" required>
+            <button type="submit">Upload</button>
         </form>
     </section>
 
     {% if siblings %}
     <section>
-        <h3>Siblings</h2>
-    <div style="display:flex;flex-wrap:wrap;">
+        <h3>Siblings</h3>
+        <div class="items-grid">
             {% for item in siblings %}
+                <div class="item-card">
                     {% if item.photo_path %}
-                        <a href="/browse/{{item.path}}" class="button button-item button-thumbnail">
-                            <img src="/thumbnail/{{item.path}}">{{item.name}}&nbsp;
+                        <a href="/browse/{{item.path}}">
+                            <img src="/thumbnail/{{item.path}}" alt="{{ item.name }}" loading="lazy" style="max-height:4rem;width:auto">
                         </a>
-                    {% else %}
-                        <a href="/browse/{{ item.path }}" class="button button-item">&nbsp;{{item.name}}&nbsp;</a>
                     {% endif %}
+                    <a href="/browse/{{ item.path }}">{{ item.name }}</a>
+                </div>
             {% endfor %}
-    </div>
-            <br>
+        </div>
     </section>
     {% endif %}
-
-
-
 {% endblock %}
 
 {% block footer %}
-<p>ID: {{metadata.id}}</p>
+<p class="mono">ID: {{ metadata.id }}</p>
 {% endblock %}

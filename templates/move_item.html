@@ -1,60 +1,39 @@
 {% extends "base.html" %}
 
-{% block title %}Move Item - House Inventory{% endblock %}
+{% block title %}Move {{ item_name }} - House Inventory{% endblock %}
 
-{% block header %}Move {{item_name}}{% endblock %}
+{% block header %}Move {{ item_name }}{% endblock %}
 
 {% block content %}
-    <h3>Move {{item_name}}</h3>
     <form action="/move/{{ item_path }}" method="post" id="move-item">
-        <label for="by-id">Destination ID:</label>
-        <input type="text" id="by_id" name="by_id" placeholder="ID" autofocus>
-        <br>
-        OR
-        <label for="search">Filter Destination:</label>
-        <input type="text" id="search" name="search" placeholder="Search items" oninput="filterItems()">
-        <br>
+        <label for="by_id">Destination ID</label>
+        <input type="text" id="by_id" name="by_id" placeholder="8-character ID" autofocus>
 
-        <label for="destination">Choose a destination:</label>
+        <label for="search">Filter destination</label>
+        <input type="text" id="search" name="search" placeholder="Search items…" oninput="filterItems()">
+
+        <label for="destination">Choose a destination</label>
         <select id="destination" name="destination">
             {% for item in items %}
                 <option value="{{ item.path }}">{{ item.path }}</option>
             {% endfor %}
         </select>
-        <br>
 
-        <input type="submit" value="Move Item">
-        <a href="/browse/{{ parent_path }}" class="button">Cancel</a>
+        <button type="submit">Move</button>
+        <a href="/browse/{{ parent_path }}">Cancel</a>
     </form>
 
     <script>
         function filterItems() {
-            let searchTerm = document.getElementById('search').value.toLowerCase();
-            let options = document.querySelectorAll('select#destination option');
-
-            options.forEach(option => {
-                let text = option.textContent.toLowerCase();
-                option.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-
-            // Find the first visible option and select it
-            let firstVisibleOption = Array.from(options).find(option => option.style.display !== 'none');
-            if (firstVisibleOption) {
-                document.getElementById('destination').value = firstVisibleOption.value;
-            }
+            const term = document.getElementById('search').value.toLowerCase();
+            const options = document.querySelectorAll('select#destination option');
+            options.forEach(o => { o.style.display = o.textContent.toLowerCase().includes(term) ? '' : 'none'; });
+            const first = Array.from(options).find(o => o.style.display !== 'none');
+            if (first) document.getElementById('destination').value = first.value;
         }
 
-        // Get the form and input field elements
-        const form = document.getElementById('move-item');
-        const inputField = document.getElementById('by_id');
-
-        // Add event listener for input changes
-        inputField.addEventListener('input', function() {
-          // Check if the input length is 8 characters
-          if (inputField.value.length === 8) {
-            // Submit the form if length is 8 characters
-            form.submit();
-          }
+        document.getElementById('by_id').addEventListener('input', function () {
+            if (this.value.length === 8) document.getElementById('move-item').submit();
         });
     </script>
 {% endblock %}

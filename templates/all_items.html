@@ -1,87 +1,45 @@
 {% extends "base.html" %}
 
-{% block style %}
-<style>
-        /* Basic styling */
-        ul {
-            list-style-type: none;
-            padding-left: 20px;
-        }
-        li {
-            margin-bottom: 5px;
-        }
-        .collapsible {
-            cursor: pointer;
-            user-select: none;
-            display: inline-flex;
-            align-items: center;
-        }
-        .collapsible a{
-            text-decoration: none;
-        }
-        .collapsible img {
-            margin-right:5px;
-        }
-        .content {
-            display: none;
-        }
-        .expanded .content {
-            display: block;
-        }
-        .expanded>span::before {
-            content: "▼ ";
-        }
-        .collapsed .content {
-            display: none;
-        }
-        .collapsed>span::before {
-            content: "► ";
-        }
-</style>
-{% endblock %}
-
 {% block title %}All Items - House Inventory{% endblock %}
+
 {% block header %}
     <h1>All Items</h1>
 {% endblock %}
 
 {% block content %}
-    <div class="collapsible">
-    <img src="/thumbnail/" style="height:3rem">
-    <a href="/browse">Home</a>
-    </div>
-    <ul>
-        {% macro render_items(items, level=0) %}
-            {% for item in items %}
-            <li class="{%if item.sub_items%}{% if level >= 0 %}collapsed{% else %}expanded{% endif %}{% endif %}">
-                <span class="collapsible" {%if item.sub_items%}onclick="toggleCollapse(this)"{%endif%}>
+    <div class="all-items-tree">
+        <div class="collapsible">
+            <img src="/thumbnail/" style="height:2.5rem" alt="Home">
+            <a href="/browse">Home</a>
+        </div>
+        <ul>
+            {% macro render_items(items, level=0) %}
+                {% for item in items %}
+                <li class="{% if item.sub_items %}{% if level >= 0 %}collapsed{% else %}expanded{% endif %}{% endif %}">
+                    <span class="collapsible" {% if item.sub_items %}onclick="toggleCollapse(this)"{% endif %}>
                         {% if item.photo_path %}
-                            <img src="/thumbnail/{{item.path}}" {% if level >=1 %}loading="lazy"{%else%}loading="eager"{%endif%} style="height:3rem">
+                            <img src="/thumbnail/{{item.path}}" {% if level >= 1 %}loading="lazy"{% else %}loading="eager"{% endif %} alt="{{ item.name }}">
                         {% endif %}
-                        {{ item.name }}<a href="/browse/{{ item.path }}"> 🔗</a>
+                        {{ item.name }}<a href="/browse/{{ item.path }}" aria-label="Browse {{ item.name }}"> 🔗</a>
                     </span>
                     {% if item.sub_items %}
                         <div class="content">
-                            <ul>
-                                {{ render_items(item.sub_items, level + 1) }}
-                            </ul>
+                            <ul>{{ render_items(item.sub_items, level + 1) }}</ul>
                         </div>
                     {% endif %}
                 </li>
-            {% endfor %}
-        {% endmacro %}        
-        <!-- Render the items -->
-        {{ render_items(items) }}
-    </ul>
-    <p>Total Items: {{ total_items}}</p>
+                {% endfor %}
+            {% endmacro %}
+            {{ render_items(items) }}
+        </ul>
+    </div>
+    <p>Total items: {{ total_items }}</p>
 
     <script>
-        // Toggle collapsible items on click
         function toggleCollapse(element) {
-            const parentLi = element.parentElement;
-            parentLi.classList.toggle('expanded');
-            parentLi.classList.toggle('collapsed');
+            const li = element.parentElement;
+            li.classList.toggle('expanded');
+            li.classList.toggle('collapsed');
         }
-
     </script>
 {% endblock %}

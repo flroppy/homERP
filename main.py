@@ -36,7 +36,7 @@ async def lifespan(app):
 app = FastAPI(title="House Inventory App", lifespan=lifespan)
 
 # Mount static files directory
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Templates directory
 templates = Jinja2Templates(directory="templates")

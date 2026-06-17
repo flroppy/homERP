@@ -1,41 +1,37 @@
 {% extends "base.html" %}
 
-{% block title %}New Item in {{parent}} - House Inventory{% endblock %}
+{% block title %}New Item in {{ parent }} - House Inventory{% endblock %}
 
-{% block header %}Create New Item in {{parent}}{% endblock %}
+{% block header %}Create New Item in {{ parent }}{% endblock %}
 
 {% block content %}
-    <h3> Create in {{ parent }}</h3>
     <form action="/create/{{ parent_path }}" method="post" enctype="multipart/form-data">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
-        
-        <label for="content">Content:</label>
-        <textarea type="text" id="content" name="content"></textarea>
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required autofocus>
 
-        <label for="photo" style="display:inline">Photo:</label>
-        <input type="file" id="photo" name="photo" accept="image/jpeg, image/png"  capture="environment" />
+        <label for="content">Content</label>
+        <textarea id="content" name="content"></textarea>
 
-        <label>Label?</label>
-        <!--- Label printing options --->
-        <input type="radio" id="labelYes" name="label" value="yes" checked>
-        <label for="labelYes">Yes</label>
-        <input type="radio" id="labelText" name="label" value="yes, with text">
-        <label for="labelText">Yes, with text</label>
-        <input type="radio" id="labelNo" name="label" value="no">
-        <label for="labelNo">No</label>
-        <br><br>
+        <label for="photo">Photo</label>
+        <input type="file" id="photo" name="photo" accept="image/jpeg, image/png" capture="environment">
 
-        <!-- Hidden input field to capture the value of 'go' -->
+        <fieldset style="border:none;padding:0;margin-top:0.75rem">
+            <legend style="font-weight:600;font-size:0.9rem">Print label?</legend>
+            <label style="display:inline;font-weight:normal;margin-right:1rem">
+                <input type="radio" name="label" value="yes" checked> Yes
+            </label>
+            <label style="display:inline;font-weight:normal;margin-right:1rem">
+                <input type="radio" name="label" value="yes, with text"> Yes, with text
+            </label>
+            <label style="display:inline;font-weight:normal">
+                <input type="radio" name="label" value="no"> No
+            </label>
+        </fieldset>
+
         <input type="hidden" id="go" name="go" value="false">
 
-        <!-- Button for 'Create Item & Go' -->
-        <button type="submit" onclick="document.getElementById('go').value = 'true'">Create & Go</button>
-
-        <!-- Button for 'Create Item & Stay' -->
-        <button type="submit" onclick="document.getElementById('go').value = 'false'">Create & Stay</button>
-
-        <br>
-        <a href="/browse/{{ parent_path }}" class="button">Cancel</a>
+        <button type="submit" onclick="document.getElementById('go').value = 'true'">Create &amp; Go</button>
+        <button type="submit" onclick="document.getElementById('go').value = 'false'">Create &amp; Stay</button>
+        <a href="/browse/{{ parent_path }}">Cancel</a>
     </form>
 {% endblock %}
