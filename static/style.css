@@ -88,11 +88,13 @@ nav .breadcrumb li:not(:last-child)::after {
 /* ── Search form in header ──────────────────────────────────────────────── */
 header form[role="search"] {
   display: flex;
+  align-items: stretch;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-header form[role="search"] input { width: auto; flex: 1; }
+header form[role="search"] input { width: auto; flex: 1; margin-top: 0; }
+header form[role="search"] button { margin-top: 0; }
 
 /* ── Forms ──────────────────────────────────────────────────────────────── */
 label { display: block; font-size: 0.9rem; font-weight: 600; margin-top: 0.75rem; }
@@ -151,19 +153,20 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
 .item-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   border: 1px solid var(--border);
   border-radius: 2rem;
-  padding: 0.25rem 0.75rem 0.25rem 0.35rem;
-  font-size: 0.9rem;
-  line-height: 1.3;
+  padding: 0.4rem 0.9rem;
+  font-size: 1rem;
+  min-height: 2.5rem;
 }
 
 .item-chip img {
-  height: 1.8rem;
+  height: 2rem;
   width: auto;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-left: -0.4rem; /* pull thumbnail to chip edge */
 }
 
 .item-chip a { color: var(--text); }
