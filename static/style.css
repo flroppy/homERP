@@ -241,6 +241,22 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
 .attachment-item details iframe,
 .attachment-item details embed { display: block; width: 100%; }
 
+/* ── Inline form (used in dialogs alongside other buttons) ──────────────── */
+.inline-form { display: inline; }
+
+/* ── Rename dialog input row ────────────────────────────────────────────── */
+.rename-input-row { display: flex; align-items: center; gap: 0.25rem; }
+.rename-input-row input { margin-top: 0; }
+.rename-ext { white-space: nowrap; color: var(--muted); }
+
+/* ── Search result score ────────────────────────────────────────────────── */
+.result-score { color: var(--muted); }
+
+/* ── Fieldset for radio groups ──────────────────────────────────────────── */
+fieldset { border: none; padding: 0; margin-top: 0.75rem; }
+fieldset legend { font-weight: 600; font-size: 0.9rem; }
+fieldset label { display: inline; font-weight: normal; margin-right: 1rem; }
+
 /* ── Barcode ────────────────────────────────────────────────────────────── */
 .barcode { margin: 0.75rem 0; }
 .barcode img { max-width: 100%; height: auto; display: block; }
@@ -250,7 +266,7 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
 .all-items-tree > ul { padding-left: 0; }
 
 .collapsible { cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 0.3rem; }
-.collapsible img { height: 2.5rem; width: auto; }
+.collapsible img { height: 2.5rem; width: auto; object-fit: cover; }
 
 .content { display: none; }
 .expanded > .content { display: block; }

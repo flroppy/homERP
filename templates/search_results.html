@@ -18,7 +18,7 @@
         {% for result in results %}
             <li>
                 <a href="/browse/{{ result.path }}">{{ result.name }}</a>
-                <small style="color:var(--muted)">score: {{ result.score }}</small>
+                <small class="result-score">score: {{ result.score }}</small>
             </li>
         {% endfor %}
         </ul>

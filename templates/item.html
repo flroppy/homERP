@@ -40,7 +40,7 @@
         <dialog id="delete-dialog">
             <h2>Delete {{ metadata.name }}?</h2>
             <p>All sub-items will be moved to the parent.</p>
-            <form action="/delete/{{ path }}" method="POST" style="display:inline">
+            <form action="/delete/{{ path }}" method="POST" class="inline-form">
                 <button type="submit" class="danger">Delete</button>
             </form>
             <button autofocus onclick="document.getElementById('delete-dialog').close()">Cancel</button>
@@ -113,9 +113,9 @@
                     <h3>Rename attachment</h3>
                     <form action="/rename-attachment/{{attachment.path}}" method="post">
                         <label for="rename-input-{{loop.index}}">New name</label>
-                        <div style="display:flex;align-items:center;gap:0.25rem">
-                            <input id="rename-input-{{loop.index}}" type="text" name="new_name" value="{{ stem }}" required style="margin-top:0">
-                            {% if ext %}<span style="white-space:nowrap;color:var(--muted)">{{ ext }}</span>{% endif %}
+                        <div class="rename-input-row">
+                            <input id="rename-input-{{loop.index}}" type="text" name="new_name" value="{{ stem }}" required>
+                            {% if ext %}<span class="rename-ext">{{ ext }}</span>{% endif %}
                         </div>
                         <button type="submit">Rename</button>
                         <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
