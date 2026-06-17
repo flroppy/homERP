@@ -28,7 +28,6 @@ All settings are environment variables, read from `.env`. The minimum you need t
 | `GIT_USERNAME` | _(empty)_ | Git username for HTTPS auth |
 | `GIT_TOKEN` | _(empty)_ | Personal access token for HTTPS auth |
 | `GIT_AUTHOR` | `homERP <homERP@s-d.space>` | Git author for backup commits |
-| `GROCY_API_KEY` | _(empty)_ | API key for Grocy label printing integration |
 
 ### Git backup
 
