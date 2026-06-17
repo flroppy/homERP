@@ -626,6 +626,18 @@ async def view_file(path: str):
     return FileResponse(file_path)
 
 
+@app.get("/view-md/{path:path}")
+async def view_markdown(request: Request, path: str):
+    """Render a markdown attachment as HTML using the app stylesheet."""
+    file_path = HOUSE_ROOT / path
+    if not str(file_path.resolve()).startswith(str(HOUSE_ROOT.resolve())):
+        raise HTTPException(status_code=403, detail="Access to this file is forbidden")
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    html_content = markdown.markdown(file_path.read_text(encoding="utf-8"))
+    return templates.TemplateResponse(request, "view_md.html", {"html_content": html_content})
+
+
 @app.post("/rename-attachment/{path:path}")
 async def rename_attachment(path: str, new_name: str = Form(...)):
     file_path = HOUSE_ROOT / path

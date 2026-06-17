@@ -139,22 +139,35 @@ button:focus-visible, input[type="submit"]:focus-visible { outline: 2px solid va
 button.danger { border-color: var(--danger); color: var(--danger); }
 button.danger:hover { background: var(--danger); color: var(--bg); }
 
-/* ── Item grid (browse view) ────────────────────────────────────────────── */
-.items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--gap);
-  margin: 0.75rem 0 1.25rem;
+/* ── Item chips (inside / siblings lists) ───────────────────────────────── */
+.item-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0 1rem;
+  list-style: none;
 }
 
-.item-card {
+.item-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.75rem;
-  text-align: center;
+  border-radius: 2rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.3;
 }
 
-.item-card a { display: block; }
+.item-chip img {
+  height: 1.8rem;
+  width: auto;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.item-chip a { color: var(--text); }
+.item-chip a:hover { color: var(--accent); text-decoration: none; }
 
 /* ── Item header (photo + name) ─────────────────────────────────────────── */
 .item-header {
@@ -174,17 +187,56 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
 .item-actions button, .item-actions a { margin: 0; }
 
 /* ── Attachments ────────────────────────────────────────────────────────── */
-.attachments-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem 0; }
+.attachments-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; margin: 0.5rem 0; }
 
-.attachment-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+/* Each attachment is a block; the summary row is a flex line */
+.attachment-item { border: 1px solid var(--border); border-radius: var(--radius); }
 
-.attachment-row details { flex: 1; min-width: 0; }
-.attachment-row details summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 0.5rem; }
-.attachment-row details summary::marker,
-.attachment-row details summary::-webkit-details-marker { display: none; }
+.attachment-item details,
+.attachment-item .attachment-plain { width: 100%; }
 
-.attachment-row .btn-icon { border: none; background: none; padding: 0.2rem 0.3rem; margin: 0; font-size: 1rem; cursor: pointer; }
-.attachment-row .btn-icon:hover { background: var(--border); border-radius: var(--radius); }
+/* Summary row — controls always on one line at the top */
+.attachment-item details summary,
+.attachment-item .attachment-plain {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  cursor: default;
+  list-style: none;
+  min-width: 0;
+}
+
+.attachment-item details summary { cursor: pointer; }
+.attachment-item details summary::marker,
+.attachment-item details summary::-webkit-details-marker { display: none; }
+
+/* File name grows, controls stay right */
+.attachment-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.btn-icon {
+  border: none;
+  background: none;
+  padding: 0.15rem 0.3rem;
+  margin: 0;
+  font-size: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  line-height: 1;
+}
+
+.btn-icon:hover { background: var(--border); }
+.btn-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Expanded preview — full width below the summary */
+.attachment-item details > :not(summary) {
+  padding: 0 0.5rem 0.5rem;
+}
+
+.attachment-item details img { max-width: 100%; display: block; }
+.attachment-item details iframe,
+.attachment-item details embed { display: block; width: 100%; }
 
 /* ── Barcode ────────────────────────────────────────────────────────────── */
 .barcode { margin: 0.75rem 0; }
@@ -205,12 +257,14 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
 
 /* ── Dialog ─────────────────────────────────────────────────────────────── */
 dialog {
+  margin: auto; /* centres against backdrop; reset zeroed this out */
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg);
   color: var(--text);
   padding: 1.5rem;
   max-width: 28rem;
+  width: 90%;
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 

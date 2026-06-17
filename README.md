@@ -121,6 +121,7 @@ Write a script to bulk edit grocy
 
 ### Features
 - **Rename the project** — "homERP" is a placeholder; see Name Ideas below
+- **Rename attachment should not allow changing the extension** — validate server-side and in the rename dialog
 - **User-defined tags / key-value pairs** — allow arbitrary metadata on items beyond just `id`; useful for aggregating info (e.g. value, size, category)
 
 ### Code Quality

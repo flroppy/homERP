@@ -30,10 +30,10 @@
         {{ metadata.html_content | safe }}
 
         <div class="item-actions">
-            <a href="/edit/{{ path }}">Edit</a>
-            <a href="/move/{{ path }}">Move</a>
+            <button aria-label="Edit {{ metadata.name }}" title="Edit" onclick="location.href='/edit/{{ path }}'">✏️</button>
+            <button aria-label="Move {{ metadata.name }}" title="Move" onclick="location.href='/move/{{ path }}'">↔️</button>
             <button aria-label="Print barcode for {{ metadata.name }}" title="Print barcode" onclick="fetch('/barcode/{{path}}').then()">📦</button>
-            <button aria-label="Print barcode with label for {{ metadata.name }}" title="Print barcode with label" onclick="fetch('/barcode-with-label/{{path}}').then()">🏷️</button>
+            <button aria-label="Print barcode with label for {{ metadata.name }}" title="Print with label" onclick="fetch('/barcode-with-label/{{path}}').then()">🏷️</button>
             <button aria-label="Delete {{ metadata.name }}" title="Delete" class="danger" onclick="document.getElementById('delete-dialog').showModal()">🗑️</button>
         </div>
 
@@ -50,18 +50,16 @@
     {% if items %}
     <section>
         <h3>Inside</h3>
-        <div class="items-grid">
+        <ul class="item-chips">
             {% for item in items %}
-                <div class="item-card">
-                    {% if item.photo_path %}
-                        <a href="/browse/{{item.path}}">
-                            <img src="/thumbnail/{{item.path}}" alt="{{ item.name }}" loading="lazy" style="max-height:4rem;width:auto">
-                        </a>
-                    {% endif %}
-                    <a href="/browse/{{ item.path }}">{{ item.name }}</a>
-                </div>
+            <li class="item-chip">
+                {% if item.photo_path %}
+                    <img src="/thumbnail/{{item.path}}" alt="" loading="lazy">
+                {% endif %}
+                <a href="/browse/{{ item.path }}">{{ item.name }}</a>
+            </li>
             {% endfor %}
-        </div>
+        </ul>
         <a href="/new/{{ path }}">Add New Item</a>
     </section>
     {% else %}
@@ -78,28 +76,36 @@
             {% set ext = attachment.name.rsplit('.', 1)[-1].lower() if '.' in attachment.name else '' %}
             {% set is_image = ext in ['jpg', 'jpeg', 'png', 'gif', 'webp'] %}
             {% set is_pdf = ext == 'pdf' %}
-            {% set is_text = ext in ['txt', 'md', 'csv', 'json', 'yaml', 'yml', 'log'] %}
-            <li class="attachment-row">
-                {% if is_image or is_pdf or is_text %}
+            {% set is_md = ext == 'md' %}
+            {% set is_text = ext in ['txt', 'csv', 'json', 'yaml', 'yml', 'log'] %}
+            {% set expandable = is_image or is_pdf or is_md or is_text %}
+            <li class="attachment-item">
+                {% if expandable %}
                 <details ontoggle="if(this.open){var el=this.querySelector('[data-src]');if(el&&!el.getAttribute('src'))el.src=el.dataset.src}">
                     <summary>
-                        {{ attachment.name }}
+                        <span class="attachment-name">{{ attachment.name }}</span>
                         <a href="/download/{{attachment.path}}" aria-label="Download {{ attachment.name }}">⬇</a>
+                        <button class="btn-icon" aria-label="Rename {{ attachment.name }}" onclick="event.preventDefault();document.getElementById('dialog-rename-{{loop.index}}').showModal()">✏️</button>
+                        <button class="btn-icon danger" aria-label="Delete {{ attachment.name }}" onclick="event.preventDefault();document.getElementById('dialog-delete-{{loop.index}}').showModal()">🗑️</button>
                     </summary>
                     {% if is_image %}
-                        <img data-src="/view/{{attachment.path}}" alt="{{ attachment.name }}" style="max-width:100%;margin-top:0.5rem">
+                        <img data-src="/view/{{attachment.path}}" alt="{{ attachment.name }}">
                     {% elif is_pdf %}
-                        <embed data-src="/view/{{attachment.path}}" type="application/pdf" width="100%" height="500px" style="margin-top:0.5rem">
+                        <embed data-src="/view/{{attachment.path}}" type="application/pdf" height="500px">
+                    {% elif is_md %}
+                        <iframe data-src="/view-md/{{attachment.path}}" height="400px" title="{{ attachment.name }}"></iframe>
                     {% elif is_text %}
-                        <iframe data-src="/view/{{attachment.path}}" width="100%" height="300px" style="border:1px solid var(--border);margin-top:0.5rem" title="{{ attachment.name }}"></iframe>
+                        <iframe data-src="/view/{{attachment.path}}" height="300px" title="{{ attachment.name }}"></iframe>
                     {% endif %}
                 </details>
                 {% else %}
-                    <span>{{ attachment.name }}</span>
+                <div class="attachment-plain">
+                    <span class="attachment-name">{{ attachment.name }}</span>
                     <a href="/download/{{attachment.path}}" aria-label="Download {{ attachment.name }}">⬇</a>
+                    <button class="btn-icon" aria-label="Rename {{ attachment.name }}" onclick="document.getElementById('dialog-rename-{{loop.index}}').showModal()">✏️</button>
+                    <button class="btn-icon danger" aria-label="Delete {{ attachment.name }}" onclick="document.getElementById('dialog-delete-{{loop.index}}').showModal()">🗑️</button>
+                </div>
                 {% endif %}
-                <button class="btn-icon" aria-label="Rename {{ attachment.name }}" onclick="document.getElementById('dialog-rename-{{loop.index}}').showModal()">✏️</button>
-                <button class="btn-icon danger" aria-label="Delete {{ attachment.name }}" onclick="document.getElementById('dialog-delete-{{loop.index}}').showModal()">🗑️</button>
 
                 <dialog id="dialog-rename-{{loop.index}}">
                     <h3>Rename attachment</h3>
@@ -113,7 +119,7 @@
 
                 <dialog id="dialog-delete-{{loop.index}}">
                     <h3>Delete {{ attachment.name }}?</h3>
-                    <a href="/delete-attachment/{{ attachment.path }}" class="danger">Delete</a>
+                    <a href="/delete-attachment/{{ attachment.path }}">Delete</a>
                     <button onclick="this.closest('dialog').close()">Cancel</button>
                 </dialog>
             </li>
@@ -130,18 +136,16 @@
     {% if siblings %}
     <section>
         <h3>Siblings</h3>
-        <div class="items-grid">
+        <ul class="item-chips">
             {% for item in siblings %}
-                <div class="item-card">
-                    {% if item.photo_path %}
-                        <a href="/browse/{{item.path}}">
-                            <img src="/thumbnail/{{item.path}}" alt="{{ item.name }}" loading="lazy" style="max-height:4rem;width:auto">
-                        </a>
-                    {% endif %}
-                    <a href="/browse/{{ item.path }}">{{ item.name }}</a>
-                </div>
+            <li class="item-chip">
+                {% if item.photo_path %}
+                    <img src="/thumbnail/{{item.path}}" alt="" loading="lazy">
+                {% endif %}
+                <a href="/browse/{{ item.path }}">{{ item.name }}</a>
+            </li>
             {% endfor %}
-        </div>
+        </ul>
     </section>
     {% endif %}
 {% endblock %}
