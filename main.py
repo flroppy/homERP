@@ -295,55 +295,39 @@ async def browse(request: Request, path: str = ""):
     )
 
 
+def build_item_hierarchy(directory_path, total=0):
+    items = []
+    if not directory_path.exists():
+        return items, total
+    for path in directory_path.iterdir():
+        if path.is_dir() and path.name != ".git":
+            try:
+                metadata = read_index_file(path)
+                total += 1
+                sub_items, total = build_item_hierarchy(path, total)
+                items.append({
+                    "path": path.relative_to(HOUSE_ROOT),
+                    "name": metadata.get("name", path.name),
+                    "id": metadata.get("id", ""),
+                    "photo_path": metadata.get("photo_path", ""),
+                    "sub_items": sub_items,
+                })
+            except Exception:
+                total += 1
+                sub_items, total = build_item_hierarchy(path, total)
+                items.append({
+                    "path": path.relative_to(HOUSE_ROOT),
+                    "name": path.name,
+                    "id": "",
+                    "sub_items": sub_items,
+                })
+        items = sorted(items, key=lambda x: x["name"])
+    return items, total
+
+
 @app.get("/all-items", response_class=HTMLResponse)
 async def all_items(request: Request):
-
-    def build_item_hierarchy(directory_path, total=0):
-        items = []
-
-        if not directory_path.exists():
-            return items,total
-
-        # TODO: Make this a helper function
-        for path in directory_path.iterdir():
-            if path.is_dir() and path.name != ".git":
-                # This is a directory, add it and recursively fetch sub-items
-                try:
-                    metadata = read_index_file(path)
-                    total+=1
-                    sub_items,total=build_item_hierarchy(path,total)
-                    items.append({
-                        "path": path.relative_to(HOUSE_ROOT),
-                        "name": metadata.get("name", path.name),
-                        "id": metadata.get("id", ""),
-                        "photo_path": metadata.get("photo_path", ""),
-                        # Recursively get sub-items
-                        "sub_items": sub_items
-                    })
-                except Exception:
-                    # If we can't read the metadata, still list the directory
-                    total+=1
-                    sub_items,total=build_item_hierarchy(path,total)
-                    items.append({
-                        "path": path.relative_to(HOUSE_ROOT),
-                        "name": path.name,
-                        "id": "",
-                        # Recursively get sub-items
-                        "sub_items": sub_items
-                    })
-            # elif path.is_file() and path.name not in ["index.md", "barcode.png"]:
-            #    # This is a file (attachment), we can optionally list them too
-            #    items.append({
-            #        "name": path.name,
-            #        "path": path.relative_to(HOUSE_ROOT),
-            #        "size": path.stat().st_size,
-            #        "sub_items": []  # No sub-items for files
-            #    })
-            items = sorted(items, key=lambda x: x['name'])
-        return items,total
-
-    # Get the top-level items and their sub-items
-    all_items_hierarchy,total = build_item_hierarchy(HOUSE_ROOT)
+    all_items_hierarchy, total = build_item_hierarchy(HOUSE_ROOT)
 
     return templates.TemplateResponse(
         request,
