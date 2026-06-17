@@ -71,6 +71,7 @@ def git_auto_backup(operation: str, item_name: str, relative_path: str, data_dir
         "move": f"Move item: {item_name} to {relative_path}",
         "upload": f"Upload attachment to {item_name} at {relative_path}",
         "delete_attachment": f"Delete attachment from {item_name} at {relative_path}",
+        "rename_attachment": f"Rename attachment in {item_name} at {relative_path}",
     }
     message = messages.get(operation, f"Change to {item_name} at {relative_path}")
 

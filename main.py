@@ -661,7 +661,7 @@ async def rename_attachment(path: str, new_name: str = Form(...)):
         raise HTTPException(status_code=409, detail="A file with that name already exists")
     file_path.rename(new_path)
     parent_path = str(file_path.parent.relative_to(HOUSE_ROOT))
-    git_backup.git_auto_backup("upload", os.path.basename(parent_path), parent_path, HOUSE_ROOT)
+    git_backup.git_auto_backup("rename_attachment", os.path.basename(parent_path), parent_path, HOUSE_ROOT)
     return RedirectResponse(url=f"/browse/{parent_path}", status_code=303)
 
 
