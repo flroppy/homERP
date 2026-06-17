@@ -84,7 +84,7 @@
                 <details ontoggle="if(this.open){var el=this.querySelector('[data-src]');if(el&&!el.getAttribute('src'))el.src=el.dataset.src}">
                     <summary>
                         <span class="attachment-name">{{ attachment.name }}</span>
-                        <a href="/download/{{attachment.path}}" aria-label="Download {{ attachment.name }}">⬇</a>
+                        <a href="/download/{{attachment.path}}" aria-label="Download {{ attachment.name }}" title="Download">⬇</a>
                         <button class="btn-icon" aria-label="Rename {{ attachment.name }}" title="Rename" onclick="event.preventDefault();document.getElementById('dialog-rename-{{loop.index}}').showModal()">✏️</button>
                         <button class="btn-icon danger" aria-label="Delete {{ attachment.name }}" title="Delete" onclick="event.preventDefault();document.getElementById('dialog-delete-{{loop.index}}').showModal()">🗑️</button>
                     </summary>

@@ -20,7 +20,7 @@
                         {% if item.photo_path %}
                             <img src="/thumbnail/{{item.path}}" {% if level >= 1 %}loading="lazy"{% else %}loading="eager"{% endif %} alt="{{ item.name }}">
                         {% endif %}
-                        {{ item.name }}<a href="/browse/{{ item.path }}" aria-label="Browse {{ item.name }}"> 🔗</a>
+                        {{ item.name }}<a href="/browse/{{ item.path }}" aria-label="Browse {{ item.name }}" title="Browse {{ item.name }}"> 🔗</a>
                     </span>
                     {% if item.sub_items %}
                         <div class="content">
