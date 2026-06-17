@@ -371,7 +371,8 @@ async def edit_item(request: Request, path: str = ""):
 
 
 @app.post("/save/{path:path}")
-async def save_item(path: str, name: str = Form(...), content: str = Form(...), photo: UploadFile = File(...)):
+async def save_item(path: str, name: str = Form(...), content: str = Form(default=""), photo: UploadFile = File(...)):
+    name = name.strip()
     item_path = HOUSE_ROOT / path
     index_path = item_path / "index.md"
 
@@ -492,12 +493,12 @@ async def delete_item(parent_path: str):
 async def create_item(
         parent_path: str,
         name: str = Form(...),
-        content: str = Form(...),
+        content: str = Form(default=""),
         photo: UploadFile = File(...),
         go: str = Form(...),
         label: str = Form(...)
 ):
-    folder_name = name
+    folder_name = name.strip()
 
     if not folder_name:
         return HTTPException(status_code=503, detail="Provide a name")
@@ -602,10 +603,12 @@ async def download_file(path: str):
 
 @app.get("/thumbnail/{path:path}")
 async def download_file(path: str):
-    file_path = HOUSE_ROOT / path / 'photo.jpg'
-
-    # Check if the file exists
-    if not file_path.exists() or not file_path.is_file():
+    item_dir = HOUSE_ROOT / path
+    if (item_dir / 'photo.jpg').is_file():
+        file_path = item_dir / 'photo.jpg'
+    elif (item_dir / 'photo.png').is_file():
+        file_path = item_dir / 'photo.png'
+    else:
         raise HTTPException(status_code=404, detail="File not found")
 
     thumbnail_path = Path(os.path.dirname(file_path)) / 'thumbnail.jpg'
@@ -656,7 +659,6 @@ async def barcode_file(path: str):
         raise HTTPException(status_code=404, detail="Item not found")
     id = metadata.get("id")
     barcode_img = generate_barcode(id)
-    print('starting send_to_printer')
     send_to_printer(barcode_img)
     img_byte_arr = BytesIO()
     barcode_img.save(img_byte_arr, format="PNG")
@@ -911,31 +913,6 @@ async def move_item(request: Request, item_path: str, destination: str = Form(..
     # Redirect to the new location
     return RedirectResponse(url=f"/browse/{destination}", status_code=303)
 
-    # Convert the image to monochrome (1 bit) for the printer
-    image = image.convert('1')
-
-    # Set up the network backend (using IP address of the printer)
-    backend = get_backend('network')
-
-    # Connect to the printer via its IP address (replace with your printer's IP address)
-    # Default port for Brother printers is 9100
-    backend.connect((BARCODE_PRINTER_IP, 9100))
-
-    # Set up the rasterizer for the Brother QL printer
-    printer = BrotherQLRaster(BARCODE_PRINTER_MODEL)
-
-    # Setup the printer with the label size
-    printer.setup(BARCODE_PRINTER_MODE, label_size[BARCODE_PRINTER_TAPE])
-
-    # Convert the image into a format suitable for the printer
-    raster_image = printer.convert(image)
-
-    # Print the image
-    printer.print(raster_image, backend)
-
-    # Close the connection after printing
-    backend.close()
-
 # see https://github.com/sam159/brotherql_grocylabels/blob/main/app/__init__.py
 
 
@@ -951,11 +928,8 @@ def send_to_printer(image: Image):
         red=redLabel
     )
 
-    print('Getting backend')
     be = BACKEND_CLASS(BARCODE_PRINTER_ADDRESS)
-    print('Sending to printer')
     be.write(bql.data)
-    print('barcode send!')
     del be
 
 
