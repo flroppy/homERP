@@ -295,6 +295,14 @@ async def browse(request: Request, path: str = ""):
     )
 
 
+_hierarchy_cache: tuple | None = None
+
+
+def _invalidate_hierarchy():
+    global _hierarchy_cache
+    _hierarchy_cache = None
+
+
 def build_item_hierarchy(directory_path, total=0):
     items = []
     if not directory_path.exists():
@@ -327,7 +335,10 @@ def build_item_hierarchy(directory_path, total=0):
 
 @app.get("/all-items", response_class=HTMLResponse)
 async def all_items(request: Request):
-    all_items_hierarchy, total = build_item_hierarchy(HOUSE_ROOT)
+    global _hierarchy_cache
+    if _hierarchy_cache is None:
+        _hierarchy_cache = build_item_hierarchy(HOUSE_ROOT)
+    all_items_hierarchy, total = _hierarchy_cache
 
     return templates.TemplateResponse(
         request,
@@ -419,6 +430,7 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(defaul
             return HTTPException(status_code=503, detail="photo not a photo, item edited with no photo")
 
     git_backup.git_auto_backup("update", name, str(path), HOUSE_ROOT)
+    _invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{path}", status_code=303)
 
 
@@ -479,6 +491,7 @@ async def delete_item(parent_path: str):
             status_code=500, detail=f"Error deleting item: {str(e)}")
 
     git_backup.git_auto_backup("delete", os.path.basename(parent_path), parent_path, HOUSE_ROOT)
+    _invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{parent_item_path.relative_to(HOUSE_ROOT)}", status_code=303)
 
 
@@ -537,6 +550,7 @@ async def create_item(
         send_to_printer(barcode_img)
 
     git_backup.git_auto_backup("create", folder_name, str(Path(parent_path) / folder_name), HOUSE_ROOT)
+    _invalidate_hierarchy()
     redirect_path = Path(parent_path) / folder_name
     if go == 'true':
         return RedirectResponse(url=f"/browse/{redirect_path}", status_code=303)
@@ -958,6 +972,7 @@ async def move_item(request: Request, item_path: str, destination: str = Form(de
             status_code=500, detail=f"Error moving item: {str(e)}")
 
     git_backup.git_auto_backup("move", item_path_obj.name, str(destination), HOUSE_ROOT)
+    _invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{destination}", status_code=303)
 
 # see https://github.com/sam159/brotherql_grocylabels/blob/main/app/__init__.py
