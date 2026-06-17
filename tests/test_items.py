@@ -1,0 +1,195 @@
+"""Tests for item CRUD, search, attachments, and move."""
+
+
+# --- Navigation ---
+
+def test_root_redirects_to_all_items(client):
+    r = client.get('/')
+    assert r.status_code == 200
+    assert 'all-items' in str(r.url)
+
+
+def test_all_items(client):
+    r = client.get('/all-items')
+    assert r.status_code == 200
+
+
+def test_browse_root(client):
+    r = client.get('/browse/')
+    assert r.status_code == 200
+
+
+# --- Create ---
+
+def test_create_item(client, data_dir):
+    r = client.post('/create/', data={'name': 'My Shelf', 'content': '', 'go': 'true', 'label': 'no'},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 200
+    assert (data_dir / 'My Shelf' / 'index.md').exists()
+
+
+def test_create_strips_trailing_spaces(client, data_dir):
+    r = client.post('/create/', data={'name': 'Trimmed  ', 'content': '', 'go': 'true', 'label': 'no'},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 200
+    assert (data_dir / 'Trimmed' / 'index.md').exists()
+    assert not (data_dir / 'Trimmed  ').exists()
+
+
+def test_create_empty_content(client, data_dir):
+    r = client.post('/create/', data={'name': 'Empty Content', 'content': '', 'go': 'true', 'label': 'no'},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 200
+    assert (data_dir / 'Empty Content' / 'index.md').exists()
+
+
+def test_create_then_stay(client, data_dir):
+    """go=false should redirect back to /new/ not the item."""
+    r = client.post('/create/', data={'name': 'Box', 'content': '', 'go': 'false', 'label': 'no'},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 200
+    assert 'new' in str(r.url)
+
+
+# --- Browse ---
+
+def test_browse_item(client, item):
+    r = client.get(f'/browse/{item}')
+    assert r.status_code == 200
+    assert item in r.text
+
+
+def test_browse_missing_returns_404(client):
+    r = client.get('/browse/does-not-exist')
+    assert r.status_code == 404
+
+
+# --- Edit / Save ---
+
+def test_edit_form(client, item):
+    r = client.get(f'/edit/{item}')
+    assert r.status_code == 200
+    assert item in r.text
+
+
+def test_save_item(client, item, data_dir):
+    r = client.post(f'/save/{item}', data={'name': item, 'content': 'updated content'},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 200
+    index = (data_dir / item / 'index.md').read_text()
+    assert 'updated content' in index
+
+
+def test_save_renames_item(client, item, data_dir):
+    r = client.post(f'/save/{item}', data={'name': 'Renamed Box', 'content': ''},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 200
+    assert (data_dir / 'Renamed Box').is_dir()
+    assert not (data_dir / item).exists()
+
+
+def test_save_strips_trailing_spaces(client, item, data_dir):
+    r = client.post(f'/save/{item}', data={'name': 'Spaced  ', 'content': ''},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 200
+    assert (data_dir / 'Spaced').is_dir()
+    assert not (data_dir / 'Spaced  ').exists()
+
+
+# --- Delete ---
+
+def test_delete_item(client, item, data_dir):
+    r = client.post(f'/delete/{item}')
+    assert r.status_code == 200
+    assert not (data_dir / item).exists()
+
+
+def test_delete_moves_children_to_parent(client, data_dir):
+    for name in ('Parent', 'Child'):
+        client.post('/create/', data={'name': name, 'content': '', 'go': 'true', 'label': 'no'},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    client.post('/move/Child', data={'destination': 'Parent', 'by_id': ''})
+    assert (data_dir / 'Parent' / 'Child').is_dir()
+    client.post('/delete/Parent')
+    assert not (data_dir / 'Parent').exists()
+    assert (data_dir / 'Child').is_dir()
+
+
+def test_delete_root_forbidden(client):
+    r = client.post('/delete/')
+    assert r.status_code in (400, 422, 500)
+
+
+# --- Search ---
+
+def test_search_by_name(client, item):
+    r = client.get(f'/search?query={item}')
+    assert r.status_code == 200
+    assert item in r.text
+
+
+def test_search_by_id(client, item, data_dir):
+    import yaml
+    index = (data_dir / item / 'index.md').read_text()
+    _, front, _ = index.split('---', 2)
+    item_id = yaml.safe_load(front)['id']
+    r = client.get(f'/search?query={item_id}')
+    # Should redirect straight to the item
+    assert r.status_code == 200
+    assert item in r.text
+
+
+# --- By ID ---
+
+def test_by_id_redirects(client, item, data_dir):
+    import yaml
+    index = (data_dir / item / 'index.md').read_text()
+    _, front, _ = index.split('---', 2)
+    item_id = yaml.safe_load(front)['id']
+    r = client.get(f'/by-id/{item_id}')
+    assert r.status_code == 200
+    assert item in r.text
+
+
+def test_by_id_missing_returns_404(client):
+    r = client.get('/by-id/notanid1')
+    assert r.status_code == 404
+
+
+# --- Attachments ---
+
+def test_upload_and_download_attachment(client, item, data_dir):
+    content = b'hello world'
+    r = client.post(f'/upload/{item}', files={'file': ('note.txt', content, 'text/plain')})
+    assert r.status_code == 200
+    assert (data_dir / item / 'note.txt').exists()
+
+    r = client.get(f'/download/{item}/note.txt')
+    assert r.status_code == 200
+    assert r.content == content
+
+
+def test_delete_attachment(client, item, data_dir):
+    client.post(f'/upload/{item}', files={'file': ('note.txt', b'x', 'text/plain')})
+    r = client.get(f'/delete-attachment/{item}/note.txt')
+    assert r.status_code == 200
+    assert not (data_dir / item / 'note.txt').exists()
+
+
+def test_download_path_traversal_blocked(client, data_dir):
+    r = client.get('/download/../conftest.py')
+    assert r.status_code in (400, 403, 404)
+
+
+# --- Move ---
+
+def test_move_item(client, data_dir):
+    # Create two items then move one into the other
+    for name in ('Container', 'Widget'):
+        client.post('/create/', data={'name': name, 'content': '', 'go': 'true', 'label': 'no'},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+
+    r = client.post('/move/Widget', data={'destination': 'Container', 'by_id': ''})
+    assert r.status_code == 200
+    assert (data_dir / 'Container' / 'Widget').is_dir()
+    assert not (data_dir / 'Widget').exists()

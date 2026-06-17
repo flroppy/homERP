@@ -279,9 +279,9 @@ async def browse(request: Request, path: str = ""):
         })
 
     return templates.TemplateResponse(
+        request,
         "item.html",
         {
-            "request": request,
             "path": path,
             "metadata": metadata,
             "items": items,
@@ -343,9 +343,9 @@ async def all_items(request: Request):
     all_items_hierarchy,total = build_item_hierarchy(HOUSE_ROOT)
 
     return templates.TemplateResponse(
+        request,
         "all_items.html",
         {
-            "request": request,
             "items": all_items_hierarchy,
             "total_items": total
         }
@@ -364,9 +364,9 @@ async def edit_item(request: Request, path: str = ""):
     metadata = read_index_file(item_path)
 
     return templates.TemplateResponse(
+        request,
         "edit.html",
         {
-            "request": request,
             "path": path,
             "metadata": metadata
         }
@@ -441,10 +441,10 @@ async def new_item_form(request: Request, path: str = ""):
         raise HTTPException(status_code=404, detail="Parent item not found")
 
     return templates.TemplateResponse(
+        request,
         "new.html",
         {
             "parent": os.path.basename(parent_path),
-            "request": request,
             "parent_path": path
         }
     )
@@ -825,8 +825,7 @@ async def search(request: Request, query: str):
     search_results = [item[1]
                       for item in fuzzy_search(query, items, attachments)]
 
-    return templates.TemplateResponse("search_results.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "search_results.html", {
         "query": query,
         "results": search_results
     })
@@ -874,9 +873,9 @@ async def move_item_select(request: Request, item_path: str = ""):
     all_items, _ = list_all_items(HOUSE_ROOT)
 
     return templates.TemplateResponse(
+        request,
         "move_item.html",
         {
-            "request": request,
             "item_path": item_path,
             "item_name": os.path.basename(item_path),
             "items": all_items,
@@ -885,7 +884,7 @@ async def move_item_select(request: Request, item_path: str = ""):
 
 
 @app.post("/move/{item_path:path}")
-async def move_item(request: Request, item_path: str, destination: str = Form(...), by_id: str = Form(...)):
+async def move_item(request: Request, item_path: str, destination: str = Form(default=""), by_id: str = Form(default="")):
     item_path_obj = HOUSE_ROOT / item_path
     if by_id:
         destination_path_obj = find_item_by_id(by_id)

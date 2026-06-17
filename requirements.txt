@@ -1,6 +1,8 @@
 fastapi
 pydantic-settings
 setuptools
+pytest
+httpx2
 pyyaml
 uuid
 markdown
