@@ -648,9 +648,13 @@ async def rename_attachment(path: str, new_name: str = Form(...)):
     new_name = new_name.strip()
     if not new_name:
         raise HTTPException(status_code=400, detail="Name cannot be empty")
-    # Always preserve the original extension regardless of what was submitted
+    # Preserve the original extension; treat submitted value as the stem.
+    # Only strip a trailing extension if the user accidentally typed the correct one.
     original_ext = file_path.suffix
-    new_stem = Path(new_name).stem
+    if original_ext and new_name.endswith(original_ext):
+        new_stem = new_name[:-len(original_ext)]
+    else:
+        new_stem = new_name
     new_name = new_stem + original_ext
     new_path = file_path.parent / new_name
     if new_path.exists() and new_path != file_path:

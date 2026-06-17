@@ -220,8 +220,23 @@ def test_rename_attachment_preserves_extension(client, item, data_dir):
     client.post(f'/upload/{item}', files={'file': ('doc.txt', b'x', 'text/plain')})
     r = client.post(f'/rename-attachment/{item}/doc.txt', data={'new_name': 'doc.pdf'})
     assert r.status_code == 200
-    assert (data_dir / item / 'doc.txt').exists()
+    assert (data_dir / item / 'doc.pdf.txt').exists()
     assert not (data_dir / item / 'doc.pdf').exists()
+
+
+def test_rename_attachment_allows_dot_in_stem(client, item, data_dir):
+    client.post(f'/upload/{item}', files={'file': ('doc.txt', b'x', 'text/plain')})
+    r = client.post(f'/rename-attachment/{item}/doc.txt', data={'new_name': 'my.backup'})
+    assert r.status_code == 200
+    assert (data_dir / item / 'my.backup.txt').exists()
+
+
+def test_rename_attachment_dedupes_extension(client, item, data_dir):
+    client.post(f'/upload/{item}', files={'file': ('doc.txt', b'x', 'text/plain')})
+    r = client.post(f'/rename-attachment/{item}/doc.txt', data={'new_name': 'newname.txt'})
+    assert r.status_code == 200
+    assert (data_dir / item / 'newname.txt').exists()
+    assert not (data_dir / item / 'newname.txt.txt').exists()
 
 
 def test_rename_attachment_conflict(client, item, data_dir):
