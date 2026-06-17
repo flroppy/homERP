@@ -1,7 +1,5 @@
 # homERP
 
-`#TODO: Chane Name`
-
 This is a home ERP system for tracking storage of evergreen items in the household. Purpose is to give every item a place so every item can be in it's place.
 
 ## Goals
@@ -21,14 +19,12 @@ These should always be thought about when implementing something
 
 Every part is a folder with metadata (files) and other parts (folder) rendered with index.md for metadata
 The index.md is rendered on the parts page and may have any information desired in it for reference.
-`#TODO: Consider allowing user created tags/key value pairs to parts metadata for arbitrary tracking and aggregating of info`
 
 ## ID
 
 ID is a base 64, 8 character long code. This allows for `281474976710656` unique items.
 
 Since folders names are just the non-unique name this means there could be conflicts.
-`#TODO: Add checks and prevent overwriting items if same name is used`
 
 ## Photo
 
@@ -68,5 +64,23 @@ Write a script to bulk edit grocy
 * Mintri?
 * Try to work a TLD in: .store, .house, .storage, .haus
 
-## Technical Debt
-I've just been writing CSS in style attributes in elements, I should probably not have done that
+## TODOs
+
+### Features
+- **Rename the project** — "homERP" is a placeholder; see Name Ideas below
+- **User-defined tags / key-value pairs** — allow arbitrary metadata on items beyond just `id`; useful for aggregating info (e.g. value, size, category)
+- **Git auto-backup** — `dulwich` is already imported and constants (`SSH_URL`, `GIT_AUTHOR`) are defined; `proposal.md` has a full implementation plan ready to go
+- **Duplicate name check** — creating an item with an existing sibling name silently overwrites it; should return an error or prompt the user
+- **Display attachments in browser** — for supported types (PDF, images, text), offer an inline view rather than always forcing a download
+- **Rename attachments** — currently attachments can only be deleted; allow renaming them in the UI
+
+### Bugs
+- **Trailing spaces in name are broken** — item names with trailing spaces cause issues; should be stripped on save/create
+- **Content field requires at least a space** — submitting an empty content field fails; should accept truly empty content
+- **Thumbnail only handles `.jpg`** — the `/thumbnail` endpoint hardcodes `photo.jpg`, but `read_index_file` checks for both `photo.png` and `photo.jpg`; they should be consistent
+- **Dead code in `move_item`** (`main.py` ~line 937) — unreachable printer backend code sits after a `return` statement; leftover from an old implementation
+
+### Code Quality
+- **Extract `build_item_hierarchy`** (`main.py:298`) — currently defined inline inside the `/all-items` route handler; should be a top-level helper
+- **Remove debug `print()` calls** in `send_to_printer` — `'starting send_to_printer'`, `'Getting backend'`, `'Sending to printer'`, `'barcode send!'` should be removed or replaced with proper logging
+- **CSS technical debt** — styles are written inline on HTML elements throughout templates; should be moved to a stylesheet
