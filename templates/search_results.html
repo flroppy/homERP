@@ -4,7 +4,7 @@
 
 {% block header %}
     <nav aria-label="breadcrumb">
-        <ul class="breadcrumb">
+        <ul>
             <li><a href="/browse/">Home</a></li>
         </ul>
     </nav>
@@ -18,7 +18,7 @@
         {% for result in results %}
             <li>
                 <a href="/browse/{{ result.path }}">{{ result.name }}</a>
-                <small class="result-score">score: {{ result.score }}</small>
+                <small>score: {{ result.score }}</small>
             </li>
         {% endfor %}
         </ul>

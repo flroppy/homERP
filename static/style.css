@@ -42,8 +42,8 @@ h1 { font-size: 1.6rem; margin: 0.75rem 0 0.5rem; }
 h2 { font-size: 1.3rem; margin: 1rem 0 0.5rem; }
 h3 { font-size: 1.1rem; margin: 1rem 0 0.4rem; }
 p  { margin: 0.5rem 0; }
-
-code, .mono { font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+small { color: var(--muted); }
+code { font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
 
 /* ── Links ──────────────────────────────────────────────────────────────── */
 a { color: var(--accent); text-decoration: none; }
@@ -71,7 +71,7 @@ footer a:hover { color: var(--accent); }
 main > section { margin-bottom: 1.5rem; }
 
 /* ── Navigation / breadcrumb ────────────────────────────────────────────── */
-nav .breadcrumb {
+nav > ul {
   display: flex;
   flex-wrap: wrap;
   list-style: none;
@@ -79,7 +79,7 @@ nav .breadcrumb {
   font-size: 0.9rem;
 }
 
-nav .breadcrumb li:not(:last-child)::after {
+nav > ul li:not(:last-child)::after {
   content: "›";
   margin: 0 0.4rem;
   color: var(--muted);
@@ -110,8 +110,8 @@ input, textarea, select {
   margin-top: 0.2rem;
 }
 
-input[type="file"]  { border: none; padding: 0; }
-input[type="radio"] { display: inline; width: auto; margin: 0 0.25rem 0 0; }
+input[type="file"]   { border: none; padding: 0; }
+input[type="radio"]  { display: inline; width: auto; margin: 0 0.25rem 0 0; }
 input[type="hidden"] { display: none; }
 input[type="submit"] { display: inline-block; width: auto; }
 
@@ -120,6 +120,10 @@ textarea { resize: vertical; min-height: 8rem; }
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+fieldset { border: none; padding: 0; margin-top: 0.75rem; }
+fieldset legend { font-weight: 600; font-size: 0.9rem; }
+fieldset label { display: inline; font-weight: normal; margin-right: 1rem; }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 button, input[type="submit"] {
@@ -166,7 +170,7 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
   width: auto;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-left: -0.4rem; /* pull thumbnail to chip edge */
+  margin-left: -0.4rem;
 }
 
 .item-chip a { color: var(--text); }
@@ -182,8 +186,7 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
 }
 
 .item-header h1 { margin: 0; line-height: 1; }
-
-.item-thumbnail { max-height: 200px; max-width: 100%; border-radius: var(--radius); }
+.item-header > img { max-height: 200px; max-width: 100%; border-radius: var(--radius); }
 
 /* ── Item action buttons ────────────────────────────────────────────────── */
 .item-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0; align-items: center; }
@@ -192,15 +195,13 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
 /* ── Attachments ────────────────────────────────────────────────────────── */
 .attachments-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; margin: 0.5rem 0; }
 
-/* Each attachment is a block; the summary row is a flex line */
-.attachment-item { border: 1px solid var(--border); border-radius: var(--radius); }
+.attachments-list > li { border: 1px solid var(--border); border-radius: var(--radius); }
 
-.attachment-item details,
-.attachment-item .attachment-plain { width: 100%; }
+.attachments-list > li > details,
+.attachments-list > li > div { width: 100%; }
 
-/* Summary row — controls always on one line at the top */
-.attachment-item details summary,
-.attachment-item .attachment-plain {
+.attachments-list > li > details > summary,
+.attachments-list > li > div {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -210,11 +211,10 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
   min-width: 0;
 }
 
-.attachment-item details summary { cursor: pointer; }
-.attachment-item details summary::marker,
-.attachment-item details summary::-webkit-details-marker { display: none; }
+.attachments-list > li > details > summary { cursor: pointer; }
+.attachments-list > li > details > summary::marker,
+.attachments-list > li > details > summary::-webkit-details-marker { display: none; }
 
-/* File name grows, controls stay right */
 .attachment-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .btn-icon {
@@ -232,34 +232,29 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
 .btn-icon:hover { background: var(--border); }
 .btn-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-/* Expanded preview — full width below the summary */
-.attachment-item details > :not(summary) {
-  padding: 0 0.5rem 0.5rem;
+.attachments-list > li > details > :not(summary) { padding: 0 0.5rem 0.5rem; }
+.attachments-list > li > details img { max-width: 100%; display: block; }
+.attachments-list > li > details iframe,
+.attachments-list > li > details embed { display: block; width: 100%; }
+
+/* ── Dialog ─────────────────────────────────────────────────────────────── */
+dialog {
+  margin: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  padding: 1.5rem;
+  max-width: 28rem;
+  width: 90%;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 
-.attachment-item details img { max-width: 100%; display: block; }
-.attachment-item details iframe,
-.attachment-item details embed { display: block; width: 100%; }
-
-/* ── Inline form (used in dialogs alongside other buttons) ──────────────── */
-.inline-form { display: inline; }
-
-/* ── Rename dialog input row ────────────────────────────────────────────── */
-.rename-input-row { display: flex; align-items: center; gap: 0.25rem; }
-.rename-input-row input { margin-top: 0; }
-.rename-ext { white-space: nowrap; color: var(--muted); }
-
-/* ── Search result score ────────────────────────────────────────────────── */
-.result-score { color: var(--muted); }
-
-/* ── Fieldset for radio groups ──────────────────────────────────────────── */
-fieldset { border: none; padding: 0; margin-top: 0.75rem; }
-fieldset legend { font-weight: 600; font-size: 0.9rem; }
-fieldset label { display: inline; font-weight: normal; margin-right: 1rem; }
-
-/* ── Barcode ────────────────────────────────────────────────────────────── */
-.barcode { margin: 0.75rem 0; }
-.barcode img { max-width: 100%; height: auto; display: block; }
+dialog form { display: inline; }
+dialog div { display: flex; align-items: center; gap: 0.25rem; }
+dialog div input { margin-top: 0; }
+dialog div > span { white-space: nowrap; color: var(--muted); }
+dialog::backdrop { background: rgba(0,0,0,0.4); }
 
 /* ── All-items collapsible tree ─────────────────────────────────────────── */
 .all-items-tree ul { list-style: none; padding-left: 1.25rem; }
@@ -273,18 +268,3 @@ fieldset label { display: inline; font-weight: normal; margin-right: 1rem; }
 .collapsed > .content { display: none; }
 .expanded > .collapsible::before  { content: "▼ "; font-size: 0.7em; color: var(--muted); }
 .collapsed > .collapsible::before { content: "► "; font-size: 0.7em; color: var(--muted); }
-
-/* ── Dialog ─────────────────────────────────────────────────────────────── */
-dialog {
-  margin: auto; /* centres against backdrop; reset zeroed this out */
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--text);
-  padding: 1.5rem;
-  max-width: 28rem;
-  width: 90%;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-}
-
-dialog::backdrop { background: rgba(0,0,0,0.4); }

@@ -4,7 +4,7 @@
 
 {% block header %}
     <nav aria-label="breadcrumb">
-        <ul class="breadcrumb">
+        <ul>
             {% for crumb in breadcrumbs %}
                 <li>
                     {% if loop.last %}
@@ -23,7 +23,7 @@
         <div class="item-header">
             <h1>{{ metadata.name }}</h1>
             {% if metadata.photo_path %}
-                <img src="{{ metadata.photo_path }}" class="item-thumbnail" alt="Photo of {{ metadata.name }}">
+                <img src="{{ metadata.photo_path }}" alt="Photo of {{ metadata.name }}">
             {% endif %}
         </div>
 
@@ -40,7 +40,7 @@
         <dialog id="delete-dialog">
             <h2>Delete {{ metadata.name }}?</h2>
             <p>All sub-items will be moved to the parent.</p>
-            <form action="/delete/{{ path }}" method="POST" class="inline-form">
+            <form action="/delete/{{ path }}" method="POST">
                 <button type="submit" class="danger">Delete</button>
             </form>
             <button autofocus onclick="document.getElementById('delete-dialog').close()">Cancel</button>
@@ -79,7 +79,9 @@
             {% set is_md = ext == 'md' %}
             {% set is_text = ext in ['txt', 'csv', 'json', 'yaml', 'yml', 'log'] %}
             {% set expandable = is_image or is_pdf or is_md or is_text %}
-            <li class="attachment-item">
+            {% set stem = attachment.name.rsplit('.', 1)[0] if '.' in attachment.name else attachment.name %}
+            {% set file_ext = '.' + attachment.name.rsplit('.', 1)[1] if '.' in attachment.name else '' %}
+            <li>
                 {% if expandable %}
                 <details ontoggle="if(this.open){var el=this.querySelector('[data-src]');if(el&&!el.getAttribute('src'))el.src=el.dataset.src}">
                     <summary>
@@ -99,23 +101,21 @@
                     {% endif %}
                 </details>
                 {% else %}
-                <div class="attachment-plain">
+                <div>
                     <span class="attachment-name">{{ attachment.name }}</span>
-                    <a href="/download/{{attachment.path}}" aria-label="Download {{ attachment.name }}">⬇</a>
+                    <a href="/download/{{attachment.path}}" aria-label="Download {{ attachment.name }}" title="Download">⬇</a>
                     <button class="btn-icon" aria-label="Rename {{ attachment.name }}" title="Rename" onclick="document.getElementById('dialog-rename-{{loop.index}}').showModal()">✏️</button>
                     <button class="btn-icon danger" aria-label="Delete {{ attachment.name }}" title="Delete" onclick="document.getElementById('dialog-delete-{{loop.index}}').showModal()">🗑️</button>
                 </div>
                 {% endif %}
 
-                {% set stem = attachment.name.rsplit('.', 1)[0] if '.' in attachment.name else attachment.name %}
-                {% set ext = '.' + attachment.name.rsplit('.', 1)[1] if '.' in attachment.name else '' %}
                 <dialog id="dialog-rename-{{loop.index}}">
                     <h3>Rename attachment</h3>
                     <form action="/rename-attachment/{{attachment.path}}" method="post">
                         <label for="rename-input-{{loop.index}}">New name</label>
-                        <div class="rename-input-row">
+                        <div>
                             <input id="rename-input-{{loop.index}}" type="text" name="new_name" value="{{ stem }}" required>
-                            {% if ext %}<span class="rename-ext">{{ ext }}</span>{% endif %}
+                            {% if file_ext %}<span>{{ file_ext }}</span>{% endif %}
                         </div>
                         <button type="submit">Rename</button>
                         <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
@@ -156,5 +156,5 @@
 {% endblock %}
 
 {% block footer %}
-<p class="mono">ID: {{ metadata.id }}</p>
+<p><code>ID: {{ metadata.id }}</code></p>
 {% endblock %}
