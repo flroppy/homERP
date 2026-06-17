@@ -43,6 +43,14 @@ def test_create_empty_content(client, data_dir):
     assert (data_dir / 'Empty Content' / 'index.md').exists()
 
 
+def test_create_duplicate_name_rejected(client, data_dir):
+    client.post('/create/', data={'name': 'Dupe', 'content': '', 'go': 'true', 'label': 'no'},
+                files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    r = client.post('/create/', data={'name': 'Dupe', 'content': '', 'go': 'true', 'label': 'no'},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 409
+
+
 def test_create_then_stay(client, data_dir):
     """go=false should redirect back to /new/ not the item."""
     r = client.post('/create/', data={'name': 'Box', 'content': '', 'go': 'false', 'label': 'no'},
@@ -86,6 +94,16 @@ def test_save_renames_item(client, item, data_dir):
     assert r.status_code == 200
     assert (data_dir / 'Renamed Box').is_dir()
     assert not (data_dir / item).exists()
+
+
+def test_save_rename_to_existing_rejected(client, data_dir):
+    for name in ('Alpha', 'Beta'):
+        client.post('/create/', data={'name': name, 'content': '', 'go': 'true', 'label': 'no'},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    r = client.post('/save/Alpha', data={'name': 'Beta', 'content': ''},
+                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 409
+    assert (data_dir / 'Alpha').is_dir()
 
 
 def test_save_strips_trailing_spaces(client, item, data_dir):

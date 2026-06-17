@@ -406,6 +406,8 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(defaul
 
     if os.path.basename(item_path) != name:
         new_path = Path(os.path.dirname(item_path)) / name
+        if new_path.exists():
+            raise HTTPException(status_code=409, detail=f"An item named '{name}' already exists here")
         try:
             os.rename(item_path, new_path)
             path = Path(os.path.dirname(path)) / name
@@ -514,7 +516,9 @@ async def create_item(
 
     # Create the item directory
     item_path = HOUSE_ROOT / parent_path / folder_name
-    item_path.mkdir(exist_ok=True, parents=True)
+    if item_path.exists():
+        raise HTTPException(status_code=409, detail=f"An item named '{folder_name}' already exists here")
+    item_path.mkdir(parents=True)
 
     # Create an index.md file with basic metadata
     index_path = item_path / "index.md"
