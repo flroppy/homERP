@@ -27,6 +27,7 @@ import subprocess
 from datetime import datetime
 from dulwich import porcelain
 from dulwich.repo import Repo
+from config import settings
 
 # Initialize FastAPI app
 app = FastAPI(title="House Inventory App")
@@ -38,8 +39,7 @@ app = FastAPI(title="House Inventory App")
 templates = Jinja2Templates(directory="templates")
 
 # Root directory for house items
-HOUSE_NAME = "House"
-HOUSE_ROOT = Path(HOUSE_NAME)
+HOUSE_ROOT = Path(settings.data_dir)
 
 # Ensure house directory exists
 HOUSE_ROOT.mkdir(exist_ok=True)
@@ -49,19 +49,22 @@ IGNORED_ATTACHMENTS = ['index.md', 'photo.jpg', 'thumbnail.jpg']
 
 UUID_LENGTH = 8
 
-BARCODE_PRINTER_MODEL = 'QL-810W'  # Model number of brother label maker
-# IP address of label maker to print to
-BARCODE_PRINTER_ADDRESS = 'tcp://10.20.30.201'
-BARCODE_PRINTER_TAPE = '12'  # Size of tape being used
-BARCODE_RENDERED_HEIGHT = 106  # pixel height of generated barcode images, 12mm tape
-selected_backend = guess_backend(BARCODE_PRINTER_ADDRESS)
-BACKEND_CLASS = backend_factory(selected_backend)['backend_class']
-label_spec = next(x for x in ALL_LABELS if x.identifier ==
-                  BARCODE_PRINTER_TAPE)
-
 REPO_PATH = HOUSE_ROOT
-SSH_URL = b"ssh://git@gitea.prod.meta:floppy/house.git"
-GIT_AUTHOR = b'homERP <homERP@s-d.space>'
+
+# Lazy printer backend — resolved on first print so the app starts without a printer
+_printer_backend_class = None
+_label_spec = None
+
+
+def get_printer_backend():
+    global _printer_backend_class, _label_spec
+    if _printer_backend_class is None:
+        selected = guess_backend(settings.barcode_printer_address)
+        _printer_backend_class = backend_factory(selected)['backend_class']
+        _label_spec = next(
+            x for x in ALL_LABELS if x.identifier == settings.barcode_printer_tape
+        )
+    return _printer_backend_class, _label_spec
 
 # Helper function to generate a 6-character base64 ID
 
@@ -81,12 +84,12 @@ def generate_barcode(item_id):
         'RGB', (encoded.width, encoded.height), encoded.pixels)
     # Calculate the scaling factor based on the desired height
     barcode_height = barcode_img.height
-    scale_factor = BARCODE_RENDERED_HEIGHT / barcode_height
+    scale_factor = settings.barcode_rendered_height / barcode_height
 
     # Scale the barcode to the desired height while maintaining the aspect ratio
     barcode_width = int(barcode_img.width * scale_factor)
     barcode_img = barcode_img.resize(
-        (barcode_width, BARCODE_RENDERED_HEIGHT), resample=Image.Resampling.NEAREST)
+        (barcode_width, settings.barcode_rendered_height), resample=Image.Resampling.NEAREST)
 
     return barcode_img
 
@@ -380,7 +383,7 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(defaul
     if not item_path.exists():
         raise HTTPException(status_code=404, detail="Item not found")
 
-    if path == "" and name != HOUSE_NAME:
+    if path == "" and name != settings.data_dir:
         raise HTTPException(status_code=403, detail="Cannot rename house name")
 
     # Get existing metadata to preserve ID
@@ -671,16 +674,16 @@ def generate_barcode_with_label(item_id, item_name, due_date: str = None):
     barcode_img = generate_barcode(item_id)
 
     # Set your desired font size
-    font = ImageFont.truetype("roboto.ttf", size=BARCODE_RENDERED_HEIGHT//2)
-    font_dd = ImageFont.truetype("roboto.ttf", size=BARCODE_RENDERED_HEIGHT//3)
+    font = ImageFont.truetype("roboto.ttf", size=settings.barcode_rendered_height//2)
+    font_dd = ImageFont.truetype("roboto.ttf", size=settings.barcode_rendered_height//3)
 
     # Calculate the scaling factor based on the desired height
     barcode_height = barcode_img.height
-    scale_factor = BARCODE_RENDERED_HEIGHT / barcode_height
+    scale_factor = settings.barcode_rendered_height / barcode_height
 
     # Scale the barcode to the desired height while maintaining the aspect ratio
     barcode_width = int(barcode_img.width * scale_factor)
-    barcode_img = barcode_img.resize((barcode_width, BARCODE_RENDERED_HEIGHT))
+    barcode_img = barcode_img.resize((barcode_width, settings.barcode_rendered_height))
 
     # Calculate the width and height of the text
     image = Image.new('RGB', (100, 100))  # You can use any size for the image
@@ -698,7 +701,7 @@ def generate_barcode_with_label(item_id, item_name, due_date: str = None):
     # Create a blank canvas for the final image (barcode + label)
     canvas_width = barcode_img.width + text_width + \
         10  # Width for the label and barcode
-    canvas_height = BARCODE_RENDERED_HEIGHT  # Fixed height for the barcode
+    canvas_height = settings.barcode_rendered_height  # Fixed height for the barcode
     canvas = Image.new('RGB', (canvas_width, canvas_height),
                        color=(255, 255, 255))  # Extra space for the label
 
@@ -917,18 +920,17 @@ async def move_item(request: Request, item_path: str, destination: str = Form(..
 
 
 def send_to_printer(image: Image):
-    bql = BrotherQLRaster(BARCODE_PRINTER_MODEL)
-
-    redLabel = label_spec.color == Color.BLACK_RED_WHITE
+    backend_class, label_spec = get_printer_backend()
+    bql = BrotherQLRaster(settings.barcode_printer_model)
 
     create_label(
         bql,
         image,
-        BARCODE_PRINTER_TAPE,
-        red=redLabel
+        settings.barcode_printer_tape,
+        red=label_spec.color == Color.BLACK_RED_WHITE
     )
 
-    be = BACKEND_CLASS(BARCODE_PRINTER_ADDRESS)
+    be = backend_class(settings.barcode_printer_address)
     be.write(bql.data)
     del be
 
@@ -936,8 +938,6 @@ def send_to_printer(image: Image):
 @app.post("/print_grocy")
 async def print_grocy(payload: Dict[Any, Any]):
     response = {"success": "false"}
-    print(payload)
-
 
     try:
         grocycode = payload['grocycode']
@@ -947,7 +947,6 @@ async def print_grocy(payload: Dict[Any, Any]):
             canvas = generate_barcode_with_label(grocycode, product, due_date)
         else:
             canvas = generate_barcode_with_label(grocycode, product)
-        print(grocycode)
         send_to_printer(canvas)
         response = {"success": "true"}
     except:

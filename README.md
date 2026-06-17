@@ -2,6 +2,40 @@
 
 This is a home ERP system for tracking storage of evergreen items in the household. Purpose is to give every item a place so every item can be in it's place.
 
+## Setup
+
+**Requirements:** Python 3.10+, `libdmtx` system library (for barcode generation)
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env with your settings
+uvicorn main:app --host 0.0.0.0 --port 80 --reload
+```
+
+### Configuration
+
+All settings are environment variables, read from `.env`. The minimum you need to change is `DATA_DIR` — everything else has working defaults.
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATA_DIR` | `House` | Path to the directory where item data is stored |
+| `BARCODE_PRINTER_MODEL` | `QL-810W` | Brother QL printer model |
+| `BARCODE_PRINTER_ADDRESS` | `tcp://10.20.30.201` | Printer address; leave empty to disable printing |
+| `BARCODE_PRINTER_TAPE` | `12` | Tape width in mm |
+| `BARCODE_RENDERED_HEIGHT` | `106` | Barcode image height in pixels (matches tape width) |
+| `GIT_SSH_URL` | _(empty)_ | Remote git URL for auto-backup (not yet implemented) |
+| `GIT_AUTHOR` | `homERP <homERP@s-d.space>` | Git author for backup commits |
+| `GROCY_API_KEY` | _(empty)_ | API key for Grocy label printing integration |
+
+### Docker
+
+```bash
+cp .env.example .env
+# Edit .env
+docker-compose up -d
+```
+
 ## Goals
 These should always be thought about when implementing something
 * Reduce friction as much as possible

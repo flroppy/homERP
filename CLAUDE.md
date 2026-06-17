@@ -20,5 +20,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Organization
 - FastAPI app with file-based storage using YAML/markdown
 - HTML templates in templates/ directory
+- `config.py` holds all configuration via `pydantic-settings` (reads from `.env`)
 - Docker deployment with docker-compose
 - No formal testing setup
+
+## Configuration
+All runtime config lives in `config.py` as a `pydantic-settings` `Settings` class. Values are read from environment variables or a `.env` file. Copy `.env.example` to `.env` to get started. Key variables:
+- `DATA_DIR` — path to item storage directory (default: `House`)
+- `BARCODE_PRINTER_ADDRESS` — printer address e.g. `tcp://192.168.1.x`; leave empty to disable printing
+- `BARCODE_PRINTER_MODEL`, `BARCODE_PRINTER_TAPE`, `BARCODE_RENDERED_HEIGHT` — label maker settings
+- `GIT_SSH_URL`, `GIT_AUTHOR` — git backup settings (not yet implemented)
+- `GROCY_API_KEY` — Grocy integration key
+
+The printer backend is initialized lazily (only on first print), so the app starts cleanly with no printer configured.
+
+## Desired Refactors
+- `main.py` is a monolith and should be split into focused modules, e.g.:
+  - `routers/items.py` — browse/create/edit/delete/move routes
+  - `routers/barcodes.py` — barcode and printing routes
+  - `storage.py` — file I/O helpers (`read_index_file`, `list_directory_items`, etc.)
+  - `barcode.py` — barcode generation logic
+  - `config.py` is already extracted as the first step of this split
