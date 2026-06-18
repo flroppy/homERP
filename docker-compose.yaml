@@ -1,5 +1,5 @@
 services:
-  python-app:
+  homERP:
     container_name: ${NAME}
     build:
       context: .  # Build the image from the current directory
