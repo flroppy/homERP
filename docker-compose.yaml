@@ -1,6 +1,6 @@
 services:
   homerp:
-    container_name: homERP
+    container_name: ${NAME}
     build:
       context: .  # Build the image from the current directory
     volumes:
