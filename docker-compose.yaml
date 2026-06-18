@@ -1,5 +1,6 @@
 services:
   python-app:
+    container_name: ${NAME}
     build:
       context: .  # Build the image from the current directory
     volumes:
