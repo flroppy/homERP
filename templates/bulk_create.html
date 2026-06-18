@@ -2,12 +2,20 @@
 {% block title %}Bulk Add to {{ parent }}{% endblock %}
 
 {% block header %}
-    <nav aria-label="breadcrumb">
-        <ul>
-            <li><a href="/browse/{{ parent_path }}">{{ parent }}</a></li>
-            <li>Bulk Add</li>
-        </ul>
-    </nav>
+<nav aria-label="breadcrumb">
+    <ul>
+        {% for crumb in breadcrumbs %}
+        <li>
+            {% if loop.last %}
+                <span aria-current="page">{{ crumb.name }}</span>
+            {% else %}
+                <a href="/bulk-create/{{ crumb.path }}">{{ crumb.name }}</a>
+            {% endif %}
+        </li>
+        {% endfor %}
+        <li>Bulk Add</li>
+    </ul>
+</nav>
 {% endblock %}
 
 {% block content %}
@@ -33,6 +41,31 @@
         <button type="button" onclick="endSession()">Done</button>
     </form>
 </section>
+
+{% if siblings or children %}
+<section>
+    {% if children %}
+    <details>
+        <summary>Inside {{ parent }}</summary>
+        <ul class="item-chips">
+            {% for item in children %}
+            <li class="item-chip"><a href="/bulk-create/{{ item.path }}">{{ item.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+    {% if siblings %}
+    <details>
+        <summary>Nearby</summary>
+        <ul class="item-chips">
+            {% for item in siblings %}
+            <li class="item-chip"><a href="/bulk-create/{{ item.path }}">{{ item.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+</section>
+{% endif %}
 
 <section id="session-log" hidden>
     <h3>Added this session</h3>

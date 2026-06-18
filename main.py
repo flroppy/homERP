@@ -564,11 +564,32 @@ async def bulk_create_form(request: Request, parent_path: str = "", added: str =
     parent = HOUSE_ROOT / parent_path
     if not parent.exists():
         raise HTTPException(status_code=404, detail="Location not found")
+
+    children, _ = list_directory_items(parent)
+    children = sorted(children, key=lambda x: x['name'])
+
+    siblings = []
+    if parent != HOUSE_ROOT:
+        sibling_items, _ = list_directory_items(parent.parent)
+        siblings = sorted(
+            [s for s in sibling_items if s['name'] != os.path.basename(parent)],
+            key=lambda x: x['name']
+        )
+
+    breadcrumbs = [{"name": settings.data_dir, "path": ""}]
+    current = Path("")
+    for part in Path(parent_path).parts:
+        current = current / part
+        breadcrumbs.append({"name": part, "path": str(current)})
+
     return templates.TemplateResponse(request, "bulk_create.html", {
         "parent": os.path.basename(parent) or settings.data_dir,
         "parent_path": parent_path,
         "added": added,
         "added_path": added_path,
+        "children": children,
+        "siblings": siblings,
+        "breadcrumbs": breadcrumbs,
     })
 
 
