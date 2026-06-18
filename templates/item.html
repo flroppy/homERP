@@ -60,13 +60,13 @@
             </li>
             {% endfor %}
         </ul>
-        <a href="/new/{{ path }}">Add New Item</a>
-        <a href="/bulk-create/{{ path }}">Bulk Add…</a>
+        <button aria-label="Add new item" title="Add new item" onclick="location.href='/new/{{ path }}'">➕</button>
+        <button aria-label="Bulk add items" title="Bulk add" onclick="location.href='/bulk-create/{{ path }}'">📋</button>
     </section>
     {% else %}
     <section>
-        <a href="/new/{{ path }}">Add New Item Inside</a>
-        <a href="/bulk-create/{{ path }}">Bulk Add…</a>
+        <button aria-label="Add new item inside" title="Add new item" onclick="location.href='/new/{{ path }}'">➕</button>
+        <button aria-label="Bulk add items" title="Bulk add" onclick="location.href='/bulk-create/{{ path }}'">📋</button>
     </section>
     {% endif %}
 
