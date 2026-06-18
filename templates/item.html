@@ -61,10 +61,12 @@
             {% endfor %}
         </ul>
         <a href="/new/{{ path }}">Add New Item</a>
+        <a href="/bulk-create/{{ path }}">Bulk Add…</a>
     </section>
     {% else %}
     <section>
         <a href="/new/{{ path }}">Add New Item Inside</a>
+        <a href="/bulk-create/{{ path }}">Bulk Add…</a>
     </section>
     {% endif %}
 

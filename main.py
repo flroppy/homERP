@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from typing import Dict, Any
 import os
+import urllib.parse
 import yaml
 import uuid
 import base64
@@ -556,6 +557,63 @@ async def create_item(
         return RedirectResponse(url=f"/browse/{redirect_path}", status_code=303)
     else:
         return RedirectResponse(url=f"/new/{parent_path}", status_code=303)
+
+
+@app.get("/bulk-create/{parent_path:path}", response_class=HTMLResponse)
+async def bulk_create_form(request: Request, parent_path: str = "", added: str = "", added_path: str = ""):
+    parent = HOUSE_ROOT / parent_path
+    if not parent.exists():
+        raise HTTPException(status_code=404, detail="Location not found")
+    return templates.TemplateResponse(request, "bulk_create.html", {
+        "parent": os.path.basename(parent) or settings.data_dir,
+        "parent_path": parent_path,
+        "added": added,
+        "added_path": added_path,
+    })
+
+
+@app.post("/bulk-create/{parent_path:path}")
+async def bulk_create_item(
+    parent_path: str,
+    name: str = Form(...),
+    content: str = Form(default=""),
+    photo: Optional[UploadFile] = File(default=None),
+    label: str = Form(default="no"),
+):
+    folder_name = name.strip()
+    if not folder_name:
+        raise HTTPException(status_code=400, detail="Name required")
+    if '?' in folder_name:
+        raise HTTPException(status_code=400, detail="? not allowed in name")
+
+    item_path = HOUSE_ROOT / parent_path / folder_name
+    if item_path.exists():
+        raise HTTPException(status_code=409, detail=f"'{folder_name}' already exists here")
+    item_path.mkdir(parents=True)
+
+    item_id = generate_id()
+    front_matter = yaml.dump({"name": folder_name, "id": item_id})
+    (item_path / "index.md").write_text(f"---\n{front_matter}---\n{content}")
+
+    if photo and photo.size > 0:
+        if photo.content_type in ['image/png', 'image/jpeg']:
+            file_path = item_path / ('photo.png' if photo.content_type == 'image/png' else 'photo.jpg')
+            with open(file_path, "wb") as f:
+                shutil.copyfileobj(photo.file, f)
+
+    if label == 'yes':
+        send_to_printer(generate_barcode(item_id))
+    elif label == 'yes, with text':
+        send_to_printer(generate_barcode_with_label(item_id, folder_name))
+
+    git_backup.git_auto_backup("create", folder_name, str(Path(parent_path) / folder_name), HOUSE_ROOT)
+    _invalidate_hierarchy()
+
+    added_path_str = str(Path(parent_path) / folder_name)
+    return RedirectResponse(
+        url=f"/bulk-create/{parent_path}?added={urllib.parse.quote(folder_name)}&added_path={urllib.parse.quote(added_path_str)}",
+        status_code=303,
+    )
 
 
 @app.post("/upload/{path:path}")

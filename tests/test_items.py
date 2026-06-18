@@ -259,3 +259,46 @@ def test_move_item(client, data_dir):
     assert r.status_code == 200
     assert (data_dir / 'Container' / 'Widget').is_dir()
     assert not (data_dir / 'Widget').exists()
+
+
+# --- Bulk Create ---
+
+def test_bulk_create_form(client):
+    r = client.get('/bulk-create/')
+    assert r.status_code == 200
+
+
+def test_bulk_create_item(client, data_dir):
+    r = client.post('/bulk-create/', data={'name': 'Bulk Box', 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
+    assert r.status_code == 200
+    assert (data_dir / 'Bulk Box' / 'index.md').exists()
+    assert 'added=Bulk+Box' in str(r.url) or 'added=Bulk%20Box' in str(r.url)
+
+
+def test_bulk_create_with_photo(client, data_dir):
+    r = client.post('/bulk-create/', data={'name': 'Photo Box', 'content': '', 'label': 'no'},
+                    files={'photo': ('photo.jpg', b'\xff\xd8\xff', 'image/jpeg')})
+    assert r.status_code == 200
+    assert (data_dir / 'Photo Box' / 'photo.jpg').exists()
+
+
+def test_bulk_create_with_content(client, data_dir):
+    r = client.post('/bulk-create/', data={'name': 'Described Box', 'content': 'some notes', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
+    assert r.status_code == 200
+    index = (data_dir / 'Described Box' / 'index.md').read_text()
+    assert 'some notes' in index
+
+
+def test_bulk_create_conflict(client, data_dir):
+    client.post('/bulk-create/', data={'name': 'Clash', 'content': '', 'label': 'no'},
+                files={'photo': ('', b'', 'application/octet-stream')})
+    r = client.post('/bulk-create/', data={'name': 'Clash', 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
+    assert r.status_code == 409
+
+
+def test_bulk_create_missing_parent(client):
+    r = client.get('/bulk-create/nonexistent-location')
+    assert r.status_code == 404
