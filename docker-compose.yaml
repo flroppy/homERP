@@ -16,15 +16,14 @@ services:
       - internal
     labels:
       - "traefik.enable=true"
-      - "traefik.http.services.homERP.loadbalancer.server.port=8000"
-      - "traefik.http.routers.homERP.rule=Host(`homERP.mir.meta`)"
-      - "traefik.http.routers.homERP.entrypoints=web"
-      - "traefik.http.routers.homERP.service=homERP"
-      # Homepage auto-discovery
+      - "traefik.http.services.${NAME}.loadbalancer.server.port=8000"
+      - "traefik.http.routers.${NAME}.rule=Host(`${URL}`)"
+      - "traefik.http.routers.${NAME}.entrypoints=web"
+      - "traefik.http.routers.${NAME}.service=${NAME}"
       - "homepage.group=Services"
-      - "homepage.name=homERP"
+      - "homepage.name=${NAME}"
       - "homepage.icon=mdi-folder-home"
-      - "homepage.href=http://homERP.mir.meta"
+      - "homepage.href=http://${URL}"
 
 networks:
   proxy:
