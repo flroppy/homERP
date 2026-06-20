@@ -32,8 +32,10 @@ def get_hierarchy():
 
 
 def generate_id():
-    random_id = uuid.uuid4().bytes
-    return base64.urlsafe_b64encode(random_id).decode('utf-8')[:UUID_LENGTH]
+    while True:
+        candidate = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8')[:UUID_LENGTH]
+        if not find_item_by_id(candidate):
+            return candidate
 
 
 def shift_headings_down(markdown_text):
