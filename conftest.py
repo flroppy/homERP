@@ -1,15 +1,17 @@
 import pytest
 from fastapi.testclient import TestClient
 import main
+import storage
+import barcode as barcode_mod
 import git_backup
 
 
 @pytest.fixture
 def data_dir(tmp_path, monkeypatch):
     """Redirect HOUSE_ROOT to a fresh temp directory for each test."""
-    monkeypatch.setattr(main, 'HOUSE_ROOT', tmp_path)
+    monkeypatch.setattr(storage, 'HOUSE_ROOT', tmp_path)
     (tmp_path / 'index.md').write_text('---\nid: testhome\n---\n')
-    monkeypatch.setattr(main, 'send_to_printer', lambda img: None)
+    monkeypatch.setattr(barcode_mod, 'send_to_printer', lambda img: None)
     monkeypatch.setattr(git_backup, 'git_auto_backup', lambda *a, **kw: None)
     return tmp_path
 
