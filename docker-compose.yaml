@@ -21,7 +21,7 @@ services:
       - "traefik.http.routers.${NAME}.rule=Host(`${URL}`)"
       - "traefik.http.routers.${NAME}.entrypoints=web"
       - "traefik.http.routers.${NAME}.service=${NAME}"
-      - "homepage.group=Services"
+      - "homepage.group=Home Management"
       - "homepage.name=${NAME}"
       - "homepage.icon=mdi-folder-home"
       - "homepage.href=http://${URL}"
