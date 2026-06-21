@@ -127,14 +127,81 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(defaul
 
 
 @router.get("/new/{path:path}", response_class=HTMLResponse)
-async def new_item_form(request: Request, path: str = ""):
-    parent_path = storage.HOUSE_ROOT / path
-    if not parent_path.exists():
-        raise HTTPException(status_code=404, detail="Parent item not found")
+async def new_item_form(request: Request, path: str = "", added: str = "", added_path: str = ""):
+    parent = storage.HOUSE_ROOT / path
+    if not parent.exists():
+        raise HTTPException(status_code=404, detail="Location not found")
+
+    children, _ = storage.list_directory_items(parent)
+    children = sorted(children, key=lambda x: x['name'])
+
+    siblings = []
+    if parent != storage.HOUSE_ROOT:
+        sibling_items, _ = storage.list_directory_items(parent.parent)
+        siblings = sorted(
+            [s for s in sibling_items if s['name'] != os.path.basename(parent)],
+            key=lambda x: x['name'],
+        )
+
+    breadcrumbs = [{"name": settings.data_dir, "path": ""}]
+    current = Path("")
+    for part in Path(path).parts:
+        current = current / part
+        breadcrumbs.append({"name": part, "path": str(current)})
+
     return templates.TemplateResponse(request, "new.html", {
-        "parent": os.path.basename(parent_path),
+        "parent": os.path.basename(parent) or settings.data_dir,
         "parent_path": path,
+        "added": added,
+        "added_path": added_path,
+        "children": children,
+        "siblings": siblings,
+        "breadcrumbs": breadcrumbs,
     })
+
+
+@router.post("/new/{path:path}")
+async def create_item(
+    path: str = "",
+    name: str = Form(...),
+    content: str = Form(default=""),
+    photo: Optional[UploadFile] = File(default=None),
+    label: str = Form(default="no"),
+):
+    folder_name = name.strip()
+    if not folder_name:
+        raise HTTPException(status_code=400, detail="Name required")
+    if '?' in folder_name:
+        raise HTTPException(status_code=400, detail="? not allowed in name")
+
+    item_path = storage.HOUSE_ROOT / path / folder_name
+    if item_path.exists():
+        raise HTTPException(status_code=409, detail=f"'{folder_name}' already exists here")
+    item_path.mkdir(parents=True)
+
+    item_id = storage.generate_id()
+    (item_path / "index.md").write_text(
+        f"---\n{yaml.dump({'name': folder_name, 'id': item_id})}---\n{content}")
+
+    if photo and photo.size > 0:
+        if photo.content_type in ['image/png', 'image/jpeg']:
+            ext = 'png' if photo.content_type == 'image/png' else 'jpg'
+            with open(item_path / f'photo.{ext}', "wb") as f:
+                shutil.copyfileobj(photo.file, f)
+
+    if label == 'yes':
+        barcode_mod.send_to_printer(barcode_mod.generate_barcode(item_id))
+    elif label == 'yes, with text':
+        barcode_mod.send_to_printer(barcode_mod.generate_barcode_with_label(item_id, folder_name))
+
+    git_backup.git_auto_backup("create", folder_name, str(Path(path) / folder_name), storage.HOUSE_ROOT)
+    storage._invalidate_hierarchy()
+
+    added_path_str = str(Path(path) / folder_name)
+    return RedirectResponse(
+        url=f"/new/{path}?added={urllib.parse.quote(folder_name)}&added_path={urllib.parse.quote(added_path_str)}",
+        status_code=303,
+    )
 
 
 @router.post("/delete/{parent_path:path}")
@@ -165,130 +232,6 @@ async def delete_item(parent_path: str):
     git_backup.git_auto_backup("delete", os.path.basename(parent_path), parent_path, storage.HOUSE_ROOT)
     storage._invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{parent_item_path.relative_to(storage.HOUSE_ROOT)}", status_code=303)
-
-
-@router.post("/create/{parent_path:path}")
-async def create_item(
-    parent_path: str,
-    name: str = Form(...),
-    content: str = Form(default=""),
-    photo: UploadFile = File(...),
-    go: str = Form(...),
-    label: str = Form(...),
-):
-    folder_name = name.strip()
-    if not folder_name:
-        return HTTPException(status_code=503, detail="Provide a name")
-    if '?' in folder_name:
-        return HTTPException(status_code=503, detail="? not allowed in name")
-
-    item_id = storage.generate_id()
-    item_path = storage.HOUSE_ROOT / parent_path / folder_name
-    if item_path.exists():
-        raise HTTPException(status_code=409, detail=f"An item named '{folder_name}' already exists here")
-    item_path.mkdir(parents=True)
-
-    with open(item_path / "index.md", "w") as f:
-        f.write(f"---\n{yaml.dump({'name': name, 'id': item_id})}---\n{content}")
-
-    if photo.size > 0:
-        if photo.content_type in ['image/png', 'image/jpeg']:
-            ext = 'png' if photo.content_type == 'image/png' else 'jpg'
-            with open(item_path / f'photo.{ext}', "wb") as f:
-                shutil.copyfileobj(photo.file, f)
-        else:
-            return HTTPException(status_code=503, detail="photo not a photo, item created with no photo")
-
-    if label == 'yes':
-        barcode_mod.send_to_printer(barcode_mod.generate_barcode(item_id))
-    elif label == 'yes, with text':
-        barcode_mod.send_to_printer(barcode_mod.generate_barcode_with_label(item_id, name))
-
-    git_backup.git_auto_backup("create", folder_name, str(Path(parent_path) / folder_name), storage.HOUSE_ROOT)
-    storage._invalidate_hierarchy()
-    redirect_path = Path(parent_path) / folder_name
-    if go == 'true':
-        return RedirectResponse(url=f"/browse/{redirect_path}", status_code=303)
-    else:
-        return RedirectResponse(url=f"/new/{parent_path}", status_code=303)
-
-
-@router.get("/bulk-create/{parent_path:path}", response_class=HTMLResponse)
-async def bulk_create_form(request: Request, parent_path: str = "", added: str = "", added_path: str = ""):
-    parent = storage.HOUSE_ROOT / parent_path
-    if not parent.exists():
-        raise HTTPException(status_code=404, detail="Location not found")
-
-    children, _ = storage.list_directory_items(parent)
-    children = sorted(children, key=lambda x: x['name'])
-
-    siblings = []
-    if parent != storage.HOUSE_ROOT:
-        sibling_items, _ = storage.list_directory_items(parent.parent)
-        siblings = sorted(
-            [s for s in sibling_items if s['name'] != os.path.basename(parent)],
-            key=lambda x: x['name'],
-        )
-
-    breadcrumbs = [{"name": settings.data_dir, "path": ""}]
-    current = Path("")
-    for part in Path(parent_path).parts:
-        current = current / part
-        breadcrumbs.append({"name": part, "path": str(current)})
-
-    return templates.TemplateResponse(request, "bulk_create.html", {
-        "parent": os.path.basename(parent) or settings.data_dir,
-        "parent_path": parent_path,
-        "added": added,
-        "added_path": added_path,
-        "children": children,
-        "siblings": siblings,
-        "breadcrumbs": breadcrumbs,
-    })
-
-
-@router.post("/bulk-create/{parent_path:path}")
-async def bulk_create_item(
-    parent_path: str,
-    name: str = Form(...),
-    content: str = Form(default=""),
-    photo: Optional[UploadFile] = File(default=None),
-    label: str = Form(default="no"),
-):
-    folder_name = name.strip()
-    if not folder_name:
-        raise HTTPException(status_code=400, detail="Name required")
-    if '?' in folder_name:
-        raise HTTPException(status_code=400, detail="? not allowed in name")
-
-    item_path = storage.HOUSE_ROOT / parent_path / folder_name
-    if item_path.exists():
-        raise HTTPException(status_code=409, detail=f"'{folder_name}' already exists here")
-    item_path.mkdir(parents=True)
-
-    item_id = storage.generate_id()
-    (item_path / "index.md").write_text(
-        f"---\n{yaml.dump({'name': folder_name, 'id': item_id})}---\n{content}")
-
-    if photo and photo.size > 0:
-        if photo.content_type in ['image/png', 'image/jpeg']:
-            ext = 'png' if photo.content_type == 'image/png' else 'jpg'
-            with open(item_path / f'photo.{ext}', "wb") as f:
-                shutil.copyfileobj(photo.file, f)
-
-    if label == 'yes':
-        barcode_mod.send_to_printer(barcode_mod.generate_barcode(item_id))
-    elif label == 'yes, with text':
-        barcode_mod.send_to_printer(barcode_mod.generate_barcode_with_label(item_id, folder_name))
-
-    git_backup.git_auto_backup("create", folder_name, str(Path(parent_path) / folder_name), storage.HOUSE_ROOT)
-    storage._invalidate_hierarchy()
-
-    added_path_str = str(Path(parent_path) / folder_name)
-    return RedirectResponse(
-        url=f"/bulk-create/{parent_path}?added={urllib.parse.quote(folder_name)}&added_path={urllib.parse.quote(added_path_str)}",
-        status_code=303,
-    )
 
 
 @router.post("/upload/{path:path}")

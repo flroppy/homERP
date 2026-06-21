@@ -22,41 +22,42 @@ def test_browse_root(client):
 # --- Create ---
 
 def test_create_item(client, data_dir):
-    r = client.post('/create/', data={'name': 'My Shelf', 'content': '', 'go': 'true', 'label': 'no'},
-                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    r = client.post('/new/', data={'name': 'My Shelf', 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
     assert r.status_code == 200
     assert (data_dir / 'My Shelf' / 'index.md').exists()
 
 
 def test_create_strips_trailing_spaces(client, data_dir):
-    r = client.post('/create/', data={'name': 'Trimmed  ', 'content': '', 'go': 'true', 'label': 'no'},
-                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    r = client.post('/new/', data={'name': 'Trimmed  ', 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
     assert r.status_code == 200
     assert (data_dir / 'Trimmed' / 'index.md').exists()
     assert not (data_dir / 'Trimmed  ').exists()
 
 
 def test_create_empty_content(client, data_dir):
-    r = client.post('/create/', data={'name': 'Empty Content', 'content': '', 'go': 'true', 'label': 'no'},
-                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    r = client.post('/new/', data={'name': 'Empty Content', 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
     assert r.status_code == 200
     assert (data_dir / 'Empty Content' / 'index.md').exists()
 
 
 def test_create_duplicate_name_rejected(client, data_dir):
-    client.post('/create/', data={'name': 'Dupe', 'content': '', 'go': 'true', 'label': 'no'},
-                files={'photo': ('photo.jpg', b'', 'image/jpeg')})
-    r = client.post('/create/', data={'name': 'Dupe', 'content': '', 'go': 'true', 'label': 'no'},
-                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    client.post('/new/', data={'name': 'Dupe', 'content': '', 'label': 'no'},
+                files={'photo': ('', b'', 'application/octet-stream')})
+    r = client.post('/new/', data={'name': 'Dupe', 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
     assert r.status_code == 409
 
 
-def test_create_then_stay(client, data_dir):
-    """go=false should redirect back to /new/ not the item."""
-    r = client.post('/create/', data={'name': 'Box', 'content': '', 'go': 'false', 'label': 'no'},
-                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+def test_create_stays_on_page(client, data_dir):
+    """Creating an item should redirect back to /new/ with ?added=."""
+    r = client.post('/new/', data={'name': 'Box', 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
     assert r.status_code == 200
     assert 'new' in str(r.url)
+    assert 'added=' in str(r.url)
 
 
 # --- Browse ---
@@ -98,8 +99,8 @@ def test_save_renames_item(client, item, data_dir):
 
 def test_save_rename_to_existing_rejected(client, data_dir):
     for name in ('Alpha', 'Beta'):
-        client.post('/create/', data={'name': name, 'content': '', 'go': 'true', 'label': 'no'},
-                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+        client.post('/new/', data={'name': name, 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
     r = client.post('/save/Alpha', data={'name': 'Beta', 'content': ''},
                     files={'photo': ('photo.jpg', b'', 'image/jpeg')})
     assert r.status_code == 409
@@ -124,8 +125,8 @@ def test_delete_item(client, item, data_dir):
 
 def test_delete_moves_children_to_parent(client, data_dir):
     for name in ('Parent', 'Child'):
-        client.post('/create/', data={'name': name, 'content': '', 'go': 'true', 'label': 'no'},
-                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+        client.post('/new/', data={'name': name, 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
     client.post('/move/Child', data={'destination': 'Parent', 'by_id': ''})
     assert (data_dir / 'Parent' / 'Child').is_dir()
     client.post('/delete/Parent')
@@ -252,8 +253,8 @@ def test_rename_attachment_conflict(client, item, data_dir):
 def test_move_item(client, data_dir):
     # Create two items then move one into the other
     for name in ('Container', 'Widget'):
-        client.post('/create/', data={'name': name, 'content': '', 'go': 'true', 'label': 'no'},
-                    files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+        client.post('/new/', data={'name': name, 'content': '', 'label': 'no'},
+                    files={'photo': ('', b'', 'application/octet-stream')})
 
     r = client.post('/move/Widget', data={'destination': 'Container', 'by_id': ''})
     assert r.status_code == 200
@@ -261,44 +262,44 @@ def test_move_item(client, data_dir):
     assert not (data_dir / 'Widget').exists()
 
 
-# --- Bulk Create ---
+# --- Add (session log form) ---
 
-def test_bulk_create_form(client):
-    r = client.get('/bulk-create/')
+def test_add_form(client):
+    r = client.get('/new/')
     assert r.status_code == 200
 
 
-def test_bulk_create_item(client, data_dir):
-    r = client.post('/bulk-create/', data={'name': 'Bulk Box', 'content': '', 'label': 'no'},
+def test_add_item(client, data_dir):
+    r = client.post('/new/', data={'name': 'Bulk Box', 'content': '', 'label': 'no'},
                     files={'photo': ('', b'', 'application/octet-stream')})
     assert r.status_code == 200
     assert (data_dir / 'Bulk Box' / 'index.md').exists()
     assert 'added=Bulk+Box' in str(r.url) or 'added=Bulk%20Box' in str(r.url)
 
 
-def test_bulk_create_with_photo(client, data_dir):
-    r = client.post('/bulk-create/', data={'name': 'Photo Box', 'content': '', 'label': 'no'},
+def test_add_with_photo(client, data_dir):
+    r = client.post('/new/', data={'name': 'Photo Box', 'content': '', 'label': 'no'},
                     files={'photo': ('photo.jpg', b'\xff\xd8\xff', 'image/jpeg')})
     assert r.status_code == 200
     assert (data_dir / 'Photo Box' / 'photo.jpg').exists()
 
 
-def test_bulk_create_with_content(client, data_dir):
-    r = client.post('/bulk-create/', data={'name': 'Described Box', 'content': 'some notes', 'label': 'no'},
+def test_add_with_content(client, data_dir):
+    r = client.post('/new/', data={'name': 'Described Box', 'content': 'some notes', 'label': 'no'},
                     files={'photo': ('', b'', 'application/octet-stream')})
     assert r.status_code == 200
     index = (data_dir / 'Described Box' / 'index.md').read_text()
     assert 'some notes' in index
 
 
-def test_bulk_create_conflict(client, data_dir):
-    client.post('/bulk-create/', data={'name': 'Clash', 'content': '', 'label': 'no'},
+def test_add_conflict(client, data_dir):
+    client.post('/new/', data={'name': 'Clash', 'content': '', 'label': 'no'},
                 files={'photo': ('', b'', 'application/octet-stream')})
-    r = client.post('/bulk-create/', data={'name': 'Clash', 'content': '', 'label': 'no'},
+    r = client.post('/new/', data={'name': 'Clash', 'content': '', 'label': 'no'},
                     files={'photo': ('', b'', 'application/octet-stream')})
     assert r.status_code == 409
 
 
-def test_bulk_create_missing_parent(client):
-    r = client.get('/bulk-create/nonexistent-location')
+def test_add_missing_parent(client):
+    r = client.get('/new/nonexistent-location')
     assert r.status_code == 404

@@ -25,6 +25,6 @@ def client(data_dir):
 def item(data_dir, client):
     """Create a single item and return its name."""
     name = 'Test Box'
-    client.post('/create/', data={'name': name, 'content': 'stuff inside', 'go': 'true', 'label': 'no'},
-                files={'photo': ('photo.jpg', b'', 'image/jpeg')})
+    client.post('/new/', data={'name': name, 'content': 'stuff inside', 'label': 'no'},
+                files={'photo': ('', b'', 'application/octet-stream')})
     return name

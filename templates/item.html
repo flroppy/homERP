@@ -61,12 +61,10 @@
             {% endfor %}
         </ul>
         <button aria-label="Add new item" title="Add new item" onclick="location.href='/new/{{ path }}'">➕</button>
-        <button aria-label="Bulk add items" title="Bulk add" onclick="location.href='/bulk-create/{{ path }}'">📋</button>
     </section>
     {% else %}
     <section>
         <button aria-label="Add new item inside" title="Add new item" onclick="location.href='/new/{{ path }}'">➕</button>
-        <button aria-label="Bulk add items" title="Bulk add" onclick="location.href='/bulk-create/{{ path }}'">📋</button>
     </section>
     {% endif %}
 

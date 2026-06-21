@@ -1,37 +1,112 @@
 {% extends "base.html" %}
+{% block title %}Add to {{ parent }}{% endblock %}
 
-{% block title %}New Item in {{ parent }} - House Inventory{% endblock %}
-
-{% block header %}Create New Item in {{ parent }}{% endblock %}
+{% block header %}
+<nav aria-label="breadcrumb">
+    <ul>
+        {% for crumb in breadcrumbs %}
+        <li>
+            {% if loop.last %}
+                <span aria-current="page">{{ crumb.name }}</span>
+            {% else %}
+                <a href="/new/{{ crumb.path }}">{{ crumb.name }}</a>
+            {% endif %}
+        </li>
+        {% endfor %}
+        <li>Add</li>
+    </ul>
+</nav>
+{% endblock %}
 
 {% block content %}
-    <form action="/create/{{ parent_path }}" method="post" enctype="multipart/form-data">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" required autofocus>
+<section>
+    <form action="/new/{{ parent_path }}" method="post" enctype="multipart/form-data">
+        <label for="item-name">Name</label>
+        <input type="text" id="item-name" name="name" required autofocus autocomplete="off">
 
-        <label for="content">Content</label>
-        <textarea id="content" name="content"></textarea>
+        <label for="item-photo">Photo <small>(optional)</small></label>
+        <input type="file" id="item-photo" name="photo" accept="image/jpeg,image/png" capture="environment">
 
-        <label for="photo">Photo</label>
-        <input type="file" id="photo" name="photo" accept="image/jpeg, image/png" capture="environment">
+        <label for="item-content">Description <small>(optional)</small></label>
+        <textarea id="item-content" name="content" rows="2"></textarea>
 
         <fieldset>
             <legend>Print label?</legend>
-            <label>
-                <input type="radio" name="label" value="yes" checked> Yes
-            </label>
-            <label>
-                <input type="radio" name="label" value="yes, with text"> Yes, with text
-            </label>
-            <label>
-                <input type="radio" name="label" value="no"> No
-            </label>
+            <label><input type="radio" name="label" value="no"> No label</label>
+            <label><input type="radio" name="label" value="yes"> Label only</label>
+            <label><input type="radio" name="label" value="yes, with text"> Label with name</label>
         </fieldset>
 
-        <input type="hidden" id="go" name="go" value="false">
-
-        <button type="submit" onclick="document.getElementById('go').value = 'true'">Create &amp; Go</button>
-        <button type="submit" onclick="document.getElementById('go').value = 'false'">Create &amp; Stay</button>
-        <a href="/browse/{{ parent_path }}">Cancel</a>
+        <button type="submit">Add item</button>
+        <button type="button" onclick="endSession()">Done</button>
     </form>
+</section>
+
+{% if siblings or children %}
+<section>
+    {% if children %}
+    <details>
+        <summary>Inside {{ parent }}</summary>
+        <ul class="item-chips">
+            {% for item in children %}
+            <li class="item-chip"><a href="/new/{{ item.path }}">{{ item.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+    {% if siblings %}
+    <details>
+        <summary>Nearby</summary>
+        <ul class="item-chips">
+            {% for item in siblings %}
+            <li class="item-chip"><a href="/new/{{ item.path }}">{{ item.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+</section>
+{% endif %}
+
+<section id="session-log" hidden>
+    <h3>Added this session</h3>
+    <ul id="session-list"></ul>
+</section>
+
+<script>
+const PARENT = {{ parent_path | tojson }};
+const SESSION_KEY = 'addSession:' + PARENT;
+const LABEL_KEY = 'addLabel';
+
+const radios = document.querySelectorAll('input[name="label"]');
+const saved = localStorage.getItem(LABEL_KEY) || 'no';
+radios.forEach(r => {
+    if (r.value === saved) r.checked = true;
+    r.addEventListener('change', () => localStorage.setItem(LABEL_KEY, r.value));
+});
+
+function renderSession() {
+    const items = JSON.parse(localStorage.getItem(SESSION_KEY) || '[]');
+    const log = document.getElementById('session-log');
+    const list = document.getElementById('session-list');
+    if (!items.length) { log.hidden = true; return; }
+    log.hidden = false;
+    list.innerHTML = items.slice().reverse().map(i =>
+        `<li>✓ ${i.name} <a href="/browse/${i.path}" aria-label="Browse ${i.name}">→</a></li>`
+    ).join('');
+}
+
+const params = new URLSearchParams(location.search);
+if (params.has('added')) {
+    const items = JSON.parse(localStorage.getItem(SESSION_KEY) || '[]');
+    items.push({ name: params.get('added'), path: params.get('added_path') || '' });
+    localStorage.setItem(SESSION_KEY, JSON.stringify(items));
+    history.replaceState(null, '', location.pathname);
+}
+renderSession();
+
+function endSession() {
+    localStorage.removeItem(SESSION_KEY);
+    location.href = '/browse/' + PARENT;
+}
+</script>
 {% endblock %}
