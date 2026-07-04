@@ -78,10 +78,10 @@ def tree() -> str:
 @mcp.tool(name="homerp upload photo")
 def upload_photo(
     path: Path,
-    image_base64: Annotated[str, Field(description="Base64-encoded image data.")],
+    image_base64: Annotated[str, Field(description="Base64-encoded image bytes. MCP parameters are JSON so binary must be base64-encoded.")],
     mime_type: Annotated[str, Field(description="Either 'image/jpeg' or 'image/png'.")] = "image/jpeg",
 ) -> str:
-    """Set or replace the photo thumbnail for an item. Pass the image as base64-encoded bytes."""
+    """Set or replace the photo thumbnail for an item. MCP requires base64; use POST /api/items/{path}/photo directly for raw binary upload."""
     data = base64.b64decode(image_base64)
     ext = "png" if mime_type == "image/png" else "jpg"
     with _client() as c:
