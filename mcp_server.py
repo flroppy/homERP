@@ -10,6 +10,8 @@ import base64
 import json
 import os
 import httpx
+from typing import Annotated
+from pydantic import Field
 from mcp.server.fastmcp import FastMCP
 
 READABLE_EXTENSIONS = {".txt", ".md", ".pdf"}
@@ -18,7 +20,41 @@ WRITABLE_EXTENSIONS = {".txt", ".md"}
 BASE_URL = os.environ.get("HOMERP_BASE_URL", "http://localhost:80").rstrip("/")
 API_KEY = os.environ.get("HOMERP_API_KEY", "")
 
-mcp = FastMCP("homERP")
+_INSTRUCTIONS = """
+homERP is a home inventory system. Everything in it is an **item** — a named container that can
+hold other items (nested arbitrarily), a markdown description, a photo, and file attachments.
+
+## Paths
+Items are identified by a slash-separated path relative to the inventory root, e.g.:
+  - "" or "/" — the root (all top-level items)
+  - "Living Room" — a top-level item
+  - "Living Room/Shelving Unit/Shelf 2" — a deeply nested item
+
+Paths have NO leading slash. Use an empty string "" for the root.
+
+## Data model
+browse() returns JSON like:
+  {
+    "id": "aB3xY7z2",        // 8-char base64 ID, unique across all items
+    "name": "Shelf 2",
+    "path": "Living Room/Shelving Unit/Shelf 2",
+    "content": "markdown text...",
+    "photo_path": "/download/...",   // null if no photo
+    "children": [ { "id", "name", "path", "content", ... }, ... ],
+    "attachments": [ { "name": "receipt.pdf", "path": "...", "size": 1234 }, ... ]
+  }
+
+## Workflow tips
+- Use browse("") to orient yourself, then browse a specific path to see its children.
+- Use search() to find items by name or content before navigating to them.
+- IDs are stable even if an item is renamed or moved — prefer move_item(by_id=True) when
+  referring to items that might be renamed.
+""".strip()
+
+mcp = FastMCP("homERP", instructions=_INSTRUCTIONS)
+
+Path = Annotated[str, Field(description='Slash-separated item path, e.g. "Living Room/Box". Empty string "" for root.')]
+Destination = Annotated[str, Field(description="Path or ID of the destination item (a directory that will contain the moved item).")]
 
 
 def _client() -> httpx.Client:
@@ -31,8 +67,8 @@ def _fmt(data) -> str:
 
 
 @mcp.tool()
-def browse(path: str = "") -> str:
-    """Get an item and its direct children and attachments. Use path='' for the root."""
+def browse(path: Path = "") -> str:
+    """Return an item's metadata, direct children, and attachment list as JSON."""
     with _client() as c:
         r = c.get(f"/api/items/{path}")
         r.raise_for_status()
@@ -40,8 +76,8 @@ def browse(path: str = "") -> str:
 
 
 @mcp.tool()
-def search(query: str) -> str:
-    """Search for items by name, content, or ID. Returns fuzzy matches or a direct ID hit."""
+def search(query: Annotated[str, Field(description="Name, content keywords, or an 8-char item ID.")]) -> str:
+    """Fuzzy-search all items by name or content. An exact 8-char ID returns a direct match."""
     with _client() as c:
         r = c.get("/api/search", params={"query": query})
         r.raise_for_status()
@@ -49,8 +85,12 @@ def search(query: str) -> str:
 
 
 @mcp.tool()
-def create_item(name: str, parent_path: str = "", content: str = "") -> str:
-    """Create a new item. parent_path='' creates at root. Returns the new item's id and path."""
+def create_item(
+    name: Annotated[str, Field(description="Display name for the new item. Must be unique within its parent.")],
+    parent_path: Path = "",
+    content: Annotated[str, Field(description="Optional markdown description.")] = "",
+) -> str:
+    """Create a new item under parent_path. Returns the new item's id and path."""
     with _client() as c:
         r = c.post(f"/api/items/{parent_path}", json={"name": name, "content": content})
         r.raise_for_status()
@@ -58,8 +98,12 @@ def create_item(name: str, parent_path: str = "", content: str = "") -> str:
 
 
 @mcp.tool()
-def update_item(path: str, name: str = "", content: str = "") -> str:
-    """Update an item's name and/or markdown content. Omit a field to leave it unchanged."""
+def update_item(
+    path: Path,
+    name: Annotated[str, Field(description="New name. Omit or pass '' to keep the current name.")] = "",
+    content: Annotated[str, Field(description="New markdown content. Omit or pass '' to keep the current content.")] = "",
+) -> str:
+    """Rename an item and/or replace its markdown content. Returns the (possibly new) path."""
     body = {}
     if name:
         body["name"] = name
@@ -72,8 +116,8 @@ def update_item(path: str, name: str = "", content: str = "") -> str:
 
 
 @mcp.tool()
-def delete_item(path: str) -> str:
-    """Delete an item. Any children are promoted to the parent location."""
+def delete_item(path: Path) -> str:
+    """Delete an item. Its children are promoted to the deleted item's parent location."""
     with _client() as c:
         r = c.delete(f"/api/items/{path}")
         r.raise_for_status()
@@ -81,8 +125,12 @@ def delete_item(path: str) -> str:
 
 
 @mcp.tool()
-def move_item(path: str, destination: str, by_id: bool = False) -> str:
-    """Move an item to a new parent. destination is a path or item ID (set by_id=True for ID)."""
+def move_item(
+    path: Path,
+    destination: Destination,
+    by_id: Annotated[bool, Field(description="Set True if destination is an item ID rather than a path.")] = False,
+) -> str:
+    """Move an item into a new parent. Returns the item's new path."""
     with _client() as c:
         r = c.post(f"/api/items/{path}/move",
                    json={"destination": destination, "by_id": by_id})
@@ -91,13 +139,16 @@ def move_item(path: str, destination: str, by_id: bool = False) -> str:
 
 
 @mcp.tool()
-def read_attachment(item_path: str, filename: str) -> str:
-    """Read an attachment from an item. Supports .txt and .md (returned as text) and .pdf (returned as base64)."""
+def read_attachment(
+    path: Path,
+    filename: Annotated[str, Field(description="Filename including extension, e.g. 'notes.md'. Supported: .txt, .md (text), .pdf (base64).")],
+) -> str:
+    """Read a file attachment from an item. Text files are returned as-is; PDFs as base64."""
     ext = os.path.splitext(filename)[1].lower()
     if ext not in READABLE_EXTENSIONS:
         return f"Unsupported file type '{ext}'. Supported: {', '.join(sorted(READABLE_EXTENSIONS))}"
     with _client() as c:
-        r = c.get(f"/api/items/{item_path}/attachments/{filename}")
+        r = c.get(f"/api/items/{path}/attachments/{filename}")
         r.raise_for_status()
         if ext == ".pdf":
             return f"PDF content (base64):\n{base64.b64encode(r.content).decode()}"
@@ -105,14 +156,18 @@ def read_attachment(item_path: str, filename: str) -> str:
 
 
 @mcp.tool()
-def write_attachment(item_path: str, filename: str, content: str) -> str:
-    """Write a .txt or .md attachment to an item, creating or overwriting it."""
+def write_attachment(
+    path: Path,
+    filename: Annotated[str, Field(description="Filename including extension. Supported: .txt, .md. Creates or overwrites.")],
+    content: Annotated[str, Field(description="Text content to write.")],
+) -> str:
+    """Write a .txt or .md file attachment to an item, creating or overwriting it."""
     ext = os.path.splitext(filename)[1].lower()
     if ext not in WRITABLE_EXTENSIONS:
         return f"Unsupported file type '{ext}'. Supported: {', '.join(sorted(WRITABLE_EXTENSIONS))}"
     with _client() as c:
         r = c.post(
-            f"/api/items/{item_path}/attachments",
+            f"/api/items/{path}/attachments",
             files={"file": (filename, content.encode(), "text/plain")},
         )
         r.raise_for_status()
