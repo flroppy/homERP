@@ -16,8 +16,8 @@ async def lifespan(app):
 
 app = FastAPI(title="homERP", docs_url="/api/", redoc_url=None, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.include_router(items.router)
-app.include_router(barcodes.router)
+app.include_router(items.router, include_in_schema=False)
+app.include_router(barcodes.router, include_in_schema=False)
 app.include_router(api.router)
 
 if __name__ == "__main__":
