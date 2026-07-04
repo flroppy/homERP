@@ -16,3 +16,4 @@ python-multipart
 python-Levenshtein
 brother-ql
 dulwich
+mcp
