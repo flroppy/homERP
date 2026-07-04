@@ -1,3 +1,4 @@
+import logging
 import os
 import yaml
 import uuid
@@ -9,6 +10,8 @@ from pathlib import Path
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from config import settings
+
+log = logging.getLogger(__name__)
 
 HOUSE_ROOT = Path(settings.data_dir)
 HOUSE_ROOT.mkdir(exist_ok=True)
@@ -153,6 +156,7 @@ def build_item_hierarchy(directory_path, total=0):
                     "sub_items": sub_items,
                 })
             except Exception:
+                log.warning("Could not read metadata for %s, using directory name", path)
                 total += 1
                 sub_items, total = build_item_hierarchy(path, total)
                 items.append({
@@ -173,6 +177,7 @@ def find_item_by_id(item_id: str):
                 if metadata and metadata.get("id") == item_id:
                     return path
             except Exception:
+                log.debug("Skipping unreadable directory %s during ID search", path)
                 continue
     return None
 

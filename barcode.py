@@ -1,3 +1,4 @@
+import logging
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 from pylibdmtx.pylibdmtx import encode
@@ -6,6 +7,8 @@ from brother_ql import BrotherQLRaster, create_label
 from brother_ql.backends import guess_backend, backend_factory
 from config import settings
 
+log = logging.getLogger(__name__)
+
 _printer_backend_class = None
 _label_spec = None
 
@@ -13,6 +16,7 @@ _label_spec = None
 def get_printer_backend():
     global _printer_backend_class, _label_spec
     if _printer_backend_class is None:
+        log.info("Initializing printer backend for %s", settings.barcode_printer_address)
         selected = guess_backend(settings.barcode_printer_address)
         _printer_backend_class = backend_factory(selected)['backend_class']
         _label_spec = next(x for x in ALL_LABELS if x.identifier == settings.barcode_printer_tape)
@@ -67,10 +71,15 @@ def generate_barcode_with_label(item_id, item_name, due_date: str = None):
 
 
 def send_to_printer(image: Image):
-    backend_class, label_spec = get_printer_backend()
-    bql = BrotherQLRaster(settings.barcode_printer_model)
-    create_label(bql, image, settings.barcode_printer_tape,
-                 red=label_spec.color == Color.BLACK_RED_WHITE)
-    be = backend_class(settings.barcode_printer_address)
-    be.write(bql.data)
-    del be
+    log.info("Sending label to printer %s", settings.barcode_printer_address)
+    try:
+        backend_class, label_spec = get_printer_backend()
+        bql = BrotherQLRaster(settings.barcode_printer_model)
+        create_label(bql, image, settings.barcode_printer_tape,
+                     red=label_spec.color == Color.BLACK_RED_WHITE)
+        be = backend_class(settings.barcode_printer_address)
+        be.write(bql.data)
+        del be
+        log.info("Label sent successfully")
+    except Exception:
+        log.exception("Failed to send label to printer")

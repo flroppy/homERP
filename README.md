@@ -123,6 +123,3 @@ Write a script to bulk edit grocy
 - **Rename the project** — "homERP" is a placeholder; see Name Ideas below
 - **User-defined tags / key-value pairs** — allow arbitrary metadata on items beyond just `id`; useful for aggregating info (e.g. value, size, category)
 
-### Code Quality
-- **Proper logging throughout** — replace bare `except: pass` patterns with structured logging; add request/error logging across all routers
-

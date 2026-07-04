@@ -1,3 +1,4 @@
+import logging
 import os
 import urllib.parse
 import yaml
@@ -17,6 +18,7 @@ from config import settings
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+log = logging.getLogger(__name__)
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -92,6 +94,7 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(defaul
         metadata = storage.read_index_file(item_path)
         item_id = metadata.get("id", "")
     except Exception:
+        log.warning("Could not read existing metadata for %s, generating new ID", item_path)
         item_id = ""
 
     if not item_id:
@@ -108,6 +111,7 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(defaul
             os.rename(item_path, new_path)
             path = Path(os.path.dirname(path)) / name
         except Exception:
+            log.exception("Failed to rename %s to %s", item_path, new_path)
             raise HTTPException(status_code=503, detail="Failed to rename item")
 
     if photo.size > 0:
@@ -121,6 +125,7 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(defaul
         else:
             return HTTPException(status_code=503, detail="photo not a photo, item edited with no photo")
 
+    log.info("Saved item %s", name)
     git_backup.git_auto_backup("update", name, str(path), storage.HOUSE_ROOT)
     storage._invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{path}", status_code=303)
@@ -194,6 +199,7 @@ async def create_item(
     elif label == 'yes, with text':
         barcode_mod.send_to_printer(barcode_mod.generate_barcode_with_label(item_id, folder_name))
 
+    log.info("Created item %s (id=%s) under %r", folder_name, item_id, path or "/")
     git_backup.git_auto_backup("create", folder_name, str(Path(path) / folder_name), storage.HOUSE_ROOT)
     storage._invalidate_hierarchy()
 
@@ -229,6 +235,7 @@ async def delete_item(parent_path: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting item: {str(e)}")
 
+    log.info("Deleted item %s", parent_path)
     git_backup.git_auto_backup("delete", os.path.basename(parent_path), parent_path, storage.HOUSE_ROOT)
     storage._invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{parent_item_path.relative_to(storage.HOUSE_ROOT)}", status_code=303)
@@ -407,6 +414,7 @@ async def move_item(request: Request, item_path: str, destination: str = Form(de
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error moving item: {str(e)}")
 
+    log.info("Moved %s to %s", item_path, destination)
     git_backup.git_auto_backup("move", item_path_obj.name, str(destination), storage.HOUSE_ROOT)
     storage._invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{destination}", status_code=303)
