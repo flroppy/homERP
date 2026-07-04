@@ -66,6 +66,15 @@ def _fmt(data) -> str:
     return json.dumps(data, indent=2)
 
 
+@mcp.tool(name="homerp tree")
+def tree() -> str:
+    """Return the full inventory as a nested tree (id, name, path, children). No content or attachments — use browse() for details on a specific item."""
+    with _client() as c:
+        r = c.get("/api/tree")
+        r.raise_for_status()
+        return _fmt(r.json())
+
+
 @mcp.tool(name="homerp browse")
 def browse(path: Path = "") -> str:
     """Return an item's metadata, direct children, and attachment list as JSON."""

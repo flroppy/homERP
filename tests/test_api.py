@@ -111,6 +111,22 @@ def test_move_item_by_id(client, data_dir):
     assert (data_dir / 'Dest' / 'Mover').is_dir()
 
 
+# --- Tree ---
+
+def test_tree_returns_nested_structure(client, data_dir):
+    client.post('/api/items/', json={'name': 'Room'})
+    client.post('/api/items/Room', json={'name': 'Box'})
+    r = client.get('/api/tree')
+    assert r.status_code == 200
+    data = r.json()
+    assert 'tree' in data
+    assert 'total' in data
+    room = next(n for n in data['tree'] if n['name'] == 'Room')
+    assert any(c['name'] == 'Box' for c in room['children'])
+    assert 'id' in room
+    assert 'path' in room
+
+
 # --- Search ---
 
 def test_search_returns_results(client, item):

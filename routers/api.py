@@ -47,6 +47,18 @@ def _serialize(obj: dict) -> dict:
             for k, v in obj.items() if k != "html_content"}
 
 
+def _serialize_tree(nodes: list) -> list:
+    result = []
+    for node in nodes:
+        result.append({
+            "id": node.get("id", ""),
+            "name": node["name"],
+            "path": str(node["path"]),
+            "children": _serialize_tree(node.get("sub_items", [])),
+        })
+    return result
+
+
 # Specific sub-resource routes must be registered before the general /{path:path}
 # routes so Starlette matches them before the greedy path catch-all.
 
@@ -189,6 +201,13 @@ async def delete_item(path: str):
     git_backup.git_auto_backup("delete", item_path.name, path, storage.HOUSE_ROOT)
     storage._invalidate_hierarchy()
     return Response(status_code=204)
+
+
+@router.get("/tree")
+async def get_tree():
+    """Return all items as a nested tree (id, name, path, children). No content fields."""
+    nodes, total = storage.get_hierarchy()
+    return {"total": total, "tree": _serialize_tree(nodes)}
 
 
 @router.get("/search")
