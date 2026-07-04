@@ -122,4 +122,5 @@ Write a script to bulk edit grocy
 ### Features
 - **Rename the project** — "homERP" is a placeholder; see Name Ideas below
 - **User-defined tags / key-value pairs** — allow arbitrary metadata on items beyond just `id`; useful for aggregating info (e.g. value, size, category)
+- **PDF upload via MCP** — `write_attachment` currently supports `.txt`/`.md` only; add base64-encoded PDF upload support
 

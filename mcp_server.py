@@ -6,10 +6,14 @@ Configuration (environment variables):
   HOMERP_BASE_URL   Base URL of the homERP instance (default: http://localhost:80)
   HOMERP_API_KEY    API key if authentication is enabled (default: none)
 """
+import base64
 import json
 import os
 import httpx
 from mcp.server.fastmcp import FastMCP
+
+READABLE_EXTENSIONS = {".txt", ".md", ".pdf"}
+WRITABLE_EXTENSIONS = {".txt", ".md"}
 
 BASE_URL = os.environ.get("HOMERP_BASE_URL", "http://localhost:80").rstrip("/")
 API_KEY = os.environ.get("HOMERP_API_KEY", "")
@@ -82,6 +86,35 @@ def move_item(path: str, destination: str, by_id: bool = False) -> str:
     with _client() as c:
         r = c.post(f"/api/items/{path}/move",
                    json={"destination": destination, "by_id": by_id})
+        r.raise_for_status()
+        return _fmt(r.json())
+
+
+@mcp.tool()
+def read_attachment(item_path: str, filename: str) -> str:
+    """Read an attachment from an item. Supports .txt and .md (returned as text) and .pdf (returned as base64)."""
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in READABLE_EXTENSIONS:
+        return f"Unsupported file type '{ext}'. Supported: {', '.join(sorted(READABLE_EXTENSIONS))}"
+    with _client() as c:
+        r = c.get(f"/api/items/{item_path}/attachments/{filename}")
+        r.raise_for_status()
+        if ext == ".pdf":
+            return f"PDF content (base64):\n{base64.b64encode(r.content).decode()}"
+        return r.text
+
+
+@mcp.tool()
+def write_attachment(item_path: str, filename: str, content: str) -> str:
+    """Write a .txt or .md attachment to an item, creating or overwriting it."""
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in WRITABLE_EXTENSIONS:
+        return f"Unsupported file type '{ext}'. Supported: {', '.join(sorted(WRITABLE_EXTENSIONS))}"
+    with _client() as c:
+        r = c.post(
+            f"/api/items/{item_path}/attachments",
+            files={"file": (filename, content.encode(), "text/plain")},
+        )
         r.raise_for_status()
         return _fmt(r.json())
 
