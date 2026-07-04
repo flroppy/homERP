@@ -66,7 +66,7 @@ def _fmt(data) -> str:
     return json.dumps(data, indent=2)
 
 
-@mcp.tool()
+@mcp.tool(name="homerp browse")
 def browse(path: Path = "") -> str:
     """Return an item's metadata, direct children, and attachment list as JSON."""
     with _client() as c:
@@ -75,7 +75,7 @@ def browse(path: Path = "") -> str:
         return _fmt(r.json())
 
 
-@mcp.tool()
+@mcp.tool(name="homerp search")
 def search(query: Annotated[str, Field(description="Name, content keywords, or an 8-char item ID.")]) -> str:
     """Fuzzy-search all items by name or content. An exact 8-char ID returns a direct match."""
     with _client() as c:
@@ -84,7 +84,7 @@ def search(query: Annotated[str, Field(description="Name, content keywords, or a
         return _fmt(r.json())
 
 
-@mcp.tool()
+@mcp.tool(name="homerp create item")
 def create_item(
     name: Annotated[str, Field(description="Display name for the new item. Must be unique within its parent.")],
     parent_path: Path = "",
@@ -97,7 +97,7 @@ def create_item(
         return _fmt(r.json())
 
 
-@mcp.tool()
+@mcp.tool(name="homerp update item")
 def update_item(
     path: Path,
     name: Annotated[str, Field(description="New name. Omit or pass '' to keep the current name.")] = "",
@@ -115,7 +115,7 @@ def update_item(
         return _fmt(r.json())
 
 
-@mcp.tool()
+@mcp.tool(name="homerp delete item")
 def delete_item(path: Path) -> str:
     """Delete an item. Its children are promoted to the deleted item's parent location."""
     with _client() as c:
@@ -124,7 +124,7 @@ def delete_item(path: Path) -> str:
         return "deleted"
 
 
-@mcp.tool()
+@mcp.tool(name="homerp move item")
 def move_item(
     path: Path,
     destination: Destination,
@@ -138,7 +138,7 @@ def move_item(
         return _fmt(r.json())
 
 
-@mcp.tool()
+@mcp.tool(name="homerp read attachment")
 def read_attachment(
     path: Path,
     filename: Annotated[str, Field(description="Filename including extension, e.g. 'notes.md'. Supported: .txt, .md (text), .pdf (base64).")],
@@ -155,7 +155,7 @@ def read_attachment(
         return r.text
 
 
-@mcp.tool()
+@mcp.tool(name="homerp write attachment")
 def write_attachment(
     path: Path,
     filename: Annotated[str, Field(description="Filename including extension. Supported: .txt, .md. Creates or overwrites.")],
