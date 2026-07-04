@@ -62,15 +62,25 @@ def _commit_and_push(data_dir: Path, message: str):
         logger.exception("Git backup failed (message: %s)", message)
 
 
+def _build_message(messages: list[str]) -> str:
+    if len(messages) == 1:
+        return messages[0]
+    subject = f"Bulk update ({len(messages)} operations)"
+    body = "\n".join(f"- {m}" for m in messages)
+    return f"{subject}\n\n{body}"
+
+
 def _worker():
     """Serialize and debounce git backup operations.
 
     Waits up to _DEBOUNCE_SECONDS for the queue to go quiet, then commits
-    everything staged in one shot. Rapid bursts produce a single commit+push.
+    everything staged in one shot. Rapid bursts produce a single commit+push
+    with a summary subject and per-operation list in the body.
     """
     while True:
         # Block until there is at least one operation to process.
-        message, data_dir = _backup_queue.get()
+        first_message, data_dir = _backup_queue.get()
+        messages = [first_message]
 
         # Drain additional operations that arrive within the debounce window.
         # Each new arrival resets the deadline so the window slides with activity.
@@ -78,11 +88,11 @@ def _worker():
             deadline = time.monotonic() + _DEBOUNCE_SECONDS
             try:
                 msg, _ = _backup_queue.get(timeout=deadline - time.monotonic())
-                message = msg  # keep the latest; git add will stage all changes anyway
+                messages.append(msg)
             except queue.Empty:
                 break  # quiet for a full window — commit now
 
-        _commit_and_push(data_dir, message)
+        _commit_and_push(data_dir, _build_message(messages))
 
 
 threading.Thread(target=_worker, daemon=True, name="git-backup").start()
