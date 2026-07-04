@@ -1,9 +1,12 @@
+import logging
 from io import BytesIO
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 import storage
 import barcode as barcode_mod
+
+log = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -41,14 +44,14 @@ async def barcode_with_label(path: str):
 
 @router.post("/print_grocy")
 async def print_grocy(payload: Dict[Any, Any]):
-    response = {"success": "false"}
+    log.info("print_grocy payload: %s", payload)
     try:
         grocycode = payload['grocycode']
         product = payload['product']
-        due_date = payload['due_date']
+        due_date = payload.get('due_date')
         canvas = barcode_mod.generate_barcode_with_label(grocycode, product, due_date if due_date else None)
         barcode_mod.send_to_printer(canvas)
-        response = {"success": "true"}
-    except Exception:
-        pass
-    return response
+        return {"success": "true"}
+    except Exception as e:
+        log.exception("print_grocy failed")
+        return {"success": "false", "error": str(e)}
