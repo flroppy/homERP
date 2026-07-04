@@ -75,6 +75,15 @@ def tree() -> str:
         return _fmt(r.json())
 
 
+@mcp.tool(name="homerp print label")
+def print_label(path: Path) -> str:
+    """Print a physical barcode label for an item. Returns an error if no printer is configured on the server."""
+    with _client() as c:
+        r = c.post(f"/api/items/{path}/print")
+        r.raise_for_status()
+        return _fmt(r.json())
+
+
 @mcp.tool(name="homerp browse")
 def browse(path: Path = "") -> str:
     """Return an item's metadata, direct children, and attachment list as JSON."""

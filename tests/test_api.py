@@ -111,6 +111,20 @@ def test_move_item_by_id(client, data_dir):
     assert (data_dir / 'Dest' / 'Mover').is_dir()
 
 
+# --- Print ---
+
+def test_print_no_printer_configured(client, item, monkeypatch):
+    monkeypatch.setattr('config.settings.barcode_printer_address', '')
+    r = client.post(f'/api/items/{item}/print')
+    assert r.status_code == 503
+
+
+def test_print_item_not_found(client, monkeypatch):
+    monkeypatch.setattr('config.settings.barcode_printer_address', 'tcp://127.0.0.1')
+    r = client.post('/api/items/nonexistent/print')
+    assert r.status_code == 404
+
+
 # --- Tree ---
 
 def test_tree_returns_nested_structure(client, data_dir):

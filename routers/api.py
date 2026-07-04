@@ -10,6 +10,7 @@ from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 import storage
 import git_backup
+import barcode as barcode_mod
 from config import settings
 
 log = logging.getLogger(__name__)
@@ -61,6 +62,24 @@ def _serialize_tree(nodes: list) -> list:
 
 # Specific sub-resource routes must be registered before the general /{path:path}
 # routes so Starlette matches them before the greedy path catch-all.
+
+@router.post("/items/{path:path}/print")
+async def print_label(path: str):
+    """Print a barcode label for an item. Requires printer to be configured."""
+    if not settings.barcode_printer_address:
+        raise HTTPException(status_code=503, detail="No printer configured (BARCODE_PRINTER_ADDRESS is not set)")
+    item_path = storage.HOUSE_ROOT / path
+    metadata = storage.read_index_file(item_path)
+    if not metadata:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item_id = metadata.get("id")
+    if not item_id:
+        raise HTTPException(status_code=422, detail="Item has no ID")
+    canvas = barcode_mod.generate_barcode_with_label(item_id, metadata.get("name", path))
+    barcode_mod.send_to_printer(canvas)
+    log.info("API printed label for %s (%s)", path, item_id)
+    return {"printed": True, "id": item_id, "name": metadata.get("name", path), "path": path}
+
 
 @router.post("/items/{path:path}/move")
 async def move_item(body: MoveItem, path: str):
