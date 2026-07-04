@@ -75,6 +75,24 @@ def tree() -> str:
         return _fmt(r.json())
 
 
+@mcp.tool(name="homerp upload photo")
+def upload_photo(
+    path: Path,
+    image_base64: Annotated[str, Field(description="Base64-encoded image data.")],
+    mime_type: Annotated[str, Field(description="Either 'image/jpeg' or 'image/png'.")] = "image/jpeg",
+) -> str:
+    """Set or replace the photo thumbnail for an item. Pass the image as base64-encoded bytes."""
+    data = base64.b64decode(image_base64)
+    ext = "png" if mime_type == "image/png" else "jpg"
+    with _client() as c:
+        r = c.post(
+            f"/api/items/{path}/photo",
+            files={"file": (f"photo.{ext}", data, mime_type)},
+        )
+        r.raise_for_status()
+        return _fmt(r.json())
+
+
 @mcp.tool(name="homerp print label")
 def print_label(path: Path) -> str:
     """Print a physical barcode label for an item. Returns an error if no printer is configured on the server."""

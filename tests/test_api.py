@@ -111,6 +111,48 @@ def test_move_item_by_id(client, data_dir):
     assert (data_dir / 'Dest' / 'Mover').is_dir()
 
 
+# --- Photo ---
+
+def test_upload_photo_jpeg(client, item, data_dir):
+    img = b'\xff\xd8\xff\xe0' + b'\x00' * 16  # minimal JPEG-ish bytes
+    r = client.post(f'/api/items/{item}/photo',
+                    files={'file': ('photo.jpg', img, 'image/jpeg')})
+    assert r.status_code == 201
+    assert (data_dir / item / 'photo.jpg').exists()
+
+
+def test_upload_photo_replaces_thumbnail(client, item, data_dir):
+    (data_dir / item / 'thumbnail.jpg').write_bytes(b'old')
+    img = b'\xff\xd8\xff\xe0' + b'\x00' * 16
+    client.post(f'/api/items/{item}/photo',
+                files={'file': ('photo.jpg', img, 'image/jpeg')})
+    assert not (data_dir / item / 'thumbnail.jpg').exists()
+
+
+def test_upload_photo_wrong_type(client, item):
+    r = client.post(f'/api/items/{item}/photo',
+                    files={'file': ('doc.pdf', b'%PDF', 'application/pdf')})
+    assert r.status_code == 415
+
+
+def test_upload_photo_missing_item(client):
+    r = client.post('/api/items/nowhere/photo',
+                    files={'file': ('photo.jpg', b'', 'image/jpeg')})
+    assert r.status_code == 404
+
+
+def test_get_photo(client, item, data_dir):
+    (data_dir / item / 'photo.jpg').write_bytes(b'img')
+    r = client.get(f'/api/items/{item}/photo')
+    assert r.status_code == 200
+    assert r.content == b'img'
+
+
+def test_get_photo_missing(client, item):
+    r = client.get(f'/api/items/{item}/photo')
+    assert r.status_code == 404
+
+
 # --- Print ---
 
 def test_print_no_printer_configured(client, item, monkeypatch):

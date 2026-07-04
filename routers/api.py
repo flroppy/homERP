@@ -63,6 +63,40 @@ def _serialize_tree(nodes: list) -> list:
 # Specific sub-resource routes must be registered before the general /{path:path}
 # routes so Starlette matches them before the greedy path catch-all.
 
+@router.post("/items/{path:path}/photo", status_code=201)
+async def upload_photo(path: str, file: UploadFile = File(...)):
+    """Upload or replace the photo for an item. Accepts image/jpeg or image/png."""
+    item_path = storage.HOUSE_ROOT / path
+    if not item_path.exists():
+        raise HTTPException(status_code=404, detail="Item not found")
+    if file.content_type not in ("image/jpeg", "image/png"):
+        raise HTTPException(status_code=415, detail="Only image/jpeg and image/png are accepted")
+    ext = "png" if file.content_type == "image/png" else "jpg"
+    dest = item_path / f"photo.{ext}"
+    if not str(dest.resolve()).startswith(str(storage.HOUSE_ROOT.resolve())):
+        raise HTTPException(status_code=403, detail="Invalid path")
+    with open(dest, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    thumbnail = item_path / "thumbnail.jpg"
+    if thumbnail.exists():
+        os.remove(thumbnail)
+    log.info("API uploaded photo for %s", path)
+    git_backup.git_auto_backup("upload", "photo", path, storage.HOUSE_ROOT)
+    storage._invalidate_hierarchy()
+    return {"photo_path": f"/download/{path}/photo.{ext}"}
+
+
+@router.get("/items/{path:path}/photo")
+async def get_photo(path: str):
+    """Download the photo for an item."""
+    item_path = storage.HOUSE_ROOT / path
+    for ext in ("jpg", "png"):
+        photo = item_path / f"photo.{ext}"
+        if photo.exists():
+            return FileResponse(photo, media_type=f"image/{ext}", filename=f"photo.{ext}")
+    raise HTTPException(status_code=404, detail="No photo for this item")
+
+
 @router.post("/items/{path:path}/print")
 async def print_label(path: str):
     """Print a barcode label for an item. Requires printer to be configured."""
