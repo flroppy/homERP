@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     git_username: str = ""
     git_token: str = ""
     git_author: str = "homERP <homERP@s-d.space>"
+    api_key: str = ""
 
 
 settings = Settings()

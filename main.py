@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import git_backup
 import storage
-from routers import items, barcodes
+from routers import items, barcodes, api
 
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO").upper())
 
@@ -14,10 +14,11 @@ async def lifespan(app):
     git_backup.ensure_repo(storage.HOUSE_ROOT)
     yield
 
-app = FastAPI(title="House Inventory App", lifespan=lifespan)
+app = FastAPI(title="homERP", docs_url="/api/", redoc_url=None, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(items.router)
 app.include_router(barcodes.router)
+app.include_router(api.router)
 
 if __name__ == "__main__":
     import uvicorn
