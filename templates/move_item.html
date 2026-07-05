@@ -41,7 +41,8 @@
 
     autocomplete(input, q => {
         if (!q) return _paths.slice(0, 20);
-        return _paths.filter(p => p.toLowerCase().includes(q.toLowerCase())).slice(0, 20);
+        try { return _paths.filter(p => new RegExp(q, 'i').test(p)).slice(0, 20); }
+        catch { return _paths.filter(p => p.toLowerCase().includes(q.toLowerCase())).slice(0, 20); }
     });
 
     function selectPath(path) {
