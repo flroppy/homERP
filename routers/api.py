@@ -282,13 +282,7 @@ async def filter_items(field: str, value: str):
 @router.get("/fields")
 async def list_fields():
     """Return all distinct custom field names and their known values across the inventory."""
-    items, _ = storage.list_all_items(storage.HOUSE_ROOT)
-    fields: dict[str, set] = {}
-    for item in items:
-        for k, v in item.items():
-            if k not in storage.SYSTEM_KEYS and v is not None:
-                fields.setdefault(k, set()).add(str(v))
-    return {k: sorted(v) for k, v in sorted(fields.items())}
+    return storage.get_fields()
 
 
 @router.get("/search")

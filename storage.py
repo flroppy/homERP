@@ -32,7 +32,16 @@ def get_hierarchy():
     global _hierarchy_cache
     if _hierarchy_cache is None:
         _hierarchy_cache = build_item_hierarchy(HOUSE_ROOT)
-    return _hierarchy_cache
+    items, total, _ = _hierarchy_cache
+    return items, total
+
+
+def get_fields() -> dict[str, list]:
+    global _hierarchy_cache
+    if _hierarchy_cache is None:
+        _hierarchy_cache = build_item_hierarchy(HOUSE_ROOT)
+    _, _, fields = _hierarchy_cache
+    return {k: sorted(v) for k, v in sorted(fields.items())}
 
 
 def generate_id():
@@ -139,16 +148,21 @@ def list_all_items(directory_path):
     return items, attachments
 
 
-def build_item_hierarchy(directory_path, total=0):
+def build_item_hierarchy(directory_path, total=0, fields=None):
+    if fields is None:
+        fields = {}
     items = []
     if not directory_path.exists():
-        return items, total
+        return items, total, fields
     for path in directory_path.iterdir():
         if path.is_dir() and path.name != ".git":
             try:
                 metadata = read_index_file(path)
                 total += 1
-                sub_items, total = build_item_hierarchy(path, total)
+                for k, v in metadata.items():
+                    if k not in SYSTEM_KEYS and v is not None:
+                        fields.setdefault(k, set()).add(str(v))
+                sub_items, total, _ = build_item_hierarchy(path, total, fields)
                 items.append({
                     "path": path.relative_to(HOUSE_ROOT),
                     "name": metadata.get("name", path.name),
@@ -159,7 +173,7 @@ def build_item_hierarchy(directory_path, total=0):
             except Exception:
                 log.warning("Could not read metadata for %s, using directory name", path)
                 total += 1
-                sub_items, total = build_item_hierarchy(path, total)
+                sub_items, total, _ = build_item_hierarchy(path, total, fields)
                 items.append({
                     "path": path.relative_to(HOUSE_ROOT),
                     "name": path.name,
@@ -167,7 +181,7 @@ def build_item_hierarchy(directory_path, total=0):
                     "sub_items": sub_items,
                 })
         items = sorted(items, key=lambda x: x["name"])
-    return items, total
+    return items, total, fields
 
 
 def find_item_by_id(item_id: str):
