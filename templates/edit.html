@@ -17,11 +17,13 @@
 
         <fieldset id="custom-fields-section">
             <legend>Fields</legend>
+            <datalist id="dl-field-keys"></datalist>
+            <datalist id="dl-field-values"></datalist>
             <div id="fields-container">
                 {% for key, value in custom_fields.items() %}
                 <div class="field-row">
-                    <input type="text" name="field_key" value="{{ key }}" placeholder="key" aria-label="Field key">
-                    <input type="text" name="field_value" value="{{ value }}" placeholder="value" aria-label="Field value">
+                    <input type="text" name="field_key" value="{{ key }}" placeholder="key" aria-label="Field key" list="dl-field-keys" oninput="updateValueSuggestions(this)">
+                    <input type="text" name="field_value" value="{{ value }}" placeholder="value" aria-label="Field value" list="dl-field-values">
                     <button type="button" aria-label="Remove field" onclick="this.closest('.field-row').remove()">✕</button>
                 </div>
                 {% endfor %}
@@ -33,11 +35,25 @@
         <a href="/browse/{{ path }}">Cancel</a>
     </form>
     <script>
+    let _fields = {};
+
+    fetch('/api/fields').then(r => r.json()).then(data => {
+        _fields = data;
+        const keyList = document.getElementById('dl-field-keys');
+        keyList.innerHTML = Object.keys(data).map(k => `<option value="${k}">`).join('');
+    });
+
+    function updateValueSuggestions(keyInput) {
+        const values = _fields[keyInput.value] || [];
+        const valueList = document.getElementById('dl-field-values');
+        valueList.innerHTML = values.map(v => `<option value="${v}">`).join('');
+    }
+
     function addField() {
         const row = document.createElement('div');
         row.className = 'field-row';
-        row.innerHTML = '<input type="text" name="field_key" placeholder="key" aria-label="Field key">'
-                      + '<input type="text" name="field_value" placeholder="value" aria-label="Field value">'
+        row.innerHTML = '<input type="text" name="field_key" placeholder="key" aria-label="Field key" list="dl-field-keys" oninput="updateValueSuggestions(this)">'
+                      + '<input type="text" name="field_value" placeholder="value" aria-label="Field value" list="dl-field-values">'
                       + '<button type="button" aria-label="Remove field" onclick="this.closest(\'.field-row\').remove()">✕</button>';
         document.getElementById('fields-container').appendChild(row);
         row.querySelector('input').focus();

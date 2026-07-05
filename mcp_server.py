@@ -66,6 +66,15 @@ def _fmt(data) -> str:
     return json.dumps(data, indent=2)
 
 
+@mcp.tool(name="homerp list fields")
+def list_fields() -> str:
+    """Return all custom field names and their known values across the inventory. Use this to discover what categories, tags, and other metadata have been applied to items."""
+    with _client() as c:
+        r = c.get("/api/fields")
+        r.raise_for_status()
+        return _fmt(r.json())
+
+
 @mcp.tool(name="homerp filter")
 def filter_by_field(
     field: Annotated[str, Field(description="Custom field name to filter on, e.g. 'category'.")],
