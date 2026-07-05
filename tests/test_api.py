@@ -259,7 +259,7 @@ def test_tree_returns_nested_structure(client, data_dir):
     room = next(n for n in data['tree'] if n['name'] == 'Room')
     assert any(c['name'] == 'Box' for c in room['children'])
     assert 'id' in room
-    assert 'path' in room
+    assert 'path' not in room
 
 
 # --- Search ---

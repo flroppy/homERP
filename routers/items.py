@@ -1,7 +1,6 @@
 import logging
 import os
 import urllib.parse
-import yaml
 import shutil
 import markdown
 from io import BytesIO
@@ -96,7 +95,6 @@ async def save_item(
 ):
     name = name.strip()
     item_path = storage.HOUSE_ROOT / path
-    index_path = item_path / "index.md"
 
     if not item_path.exists():
         raise HTTPException(status_code=404, detail="Item not found")
@@ -104,51 +102,31 @@ async def save_item(
     if path == "" and name != settings.data_dir:
         raise HTTPException(status_code=403, detail="Cannot rename house name")
 
-    try:
-        metadata = storage.read_index_file(item_path)
-        item_id = metadata.get("id", "")
-    except Exception:
-        log.warning("Could not read existing metadata for %s, generating new ID", item_path)
-        metadata = {}
-        item_id = ""
-
-    if not item_id:
-        item_id = storage.generate_id()
-
-    preserved = {}
+    fields = {}
     for k, v in zip(field_key, field_value):
         k = k.strip()
         if k and v.strip():
-            preserved[k] = v.strip()
+            fields[k] = v.strip()
 
-    with open(index_path, "w") as f:
-        f.write(f"---\n{yaml.dump({'id': item_id, **preserved})}---\n{content}")
+    try:
+        new_item_path = storage.update_item(item_path, name, content, fields, replace_fields=True)
+    except FileExistsError:
+        raise HTTPException(status_code=409, detail=f"An item named '{name}' already exists here")
 
-    if os.path.basename(item_path) != name:
-        new_path = Path(os.path.dirname(item_path)) / name
-        if new_path.exists():
-            raise HTTPException(status_code=409, detail=f"An item named '{name}' already exists here")
-        try:
-            os.rename(item_path, new_path)
-            path = Path(os.path.dirname(path)) / name
-        except Exception:
-            log.exception("Failed to rename %s to %s", item_path, new_path)
-            raise HTTPException(status_code=503, detail="Failed to rename item")
+    path = str(new_item_path.relative_to(storage.HOUSE_ROOT))
 
     if photo.size > 0:
         if photo.content_type in ['image/png', 'image/jpeg']:
-            file_path = Path(item_path) / 'photo.jpg'
-            with open(file_path, "wb") as f:
+            with open(new_item_path / 'photo.jpg', "wb") as f:
                 shutil.copyfileobj(photo.file, f)
-            thumbnail_path = Path(item_path) / 'thumbnail.jpg'
+            thumbnail_path = new_item_path / 'thumbnail.jpg'
             if thumbnail_path.exists():
                 os.remove(thumbnail_path)
         else:
             return HTTPException(status_code=503, detail="photo not a photo, item edited with no photo")
 
     log.info("Saved item %s", name)
-    git_backup.git_auto_backup("update", name, str(path), storage.HOUSE_ROOT)
-    storage._invalidate_hierarchy()
+    git_backup.git_auto_backup("update", name, path, storage.HOUSE_ROOT)
     return RedirectResponse(url=f"/browse/{path}", status_code=303)
 
 
@@ -200,14 +178,11 @@ async def create_item(
     if '?' in folder_name:
         raise HTTPException(status_code=400, detail="? not allowed in name")
 
-    item_path = storage.HOUSE_ROOT / path / folder_name
-    if item_path.exists():
+    parent = storage.HOUSE_ROOT / path
+    try:
+        item_id, item_path = storage.create_item(parent, folder_name, content)
+    except FileExistsError:
         raise HTTPException(status_code=409, detail=f"'{folder_name}' already exists here")
-    item_path.mkdir(parents=True)
-
-    item_id = storage.generate_id()
-    (item_path / "index.md").write_text(
-        f"---\n{yaml.dump({'id': item_id})}---\n{content}")
 
     if photo and photo.size > 0:
         if photo.content_type in ['image/png', 'image/jpeg']:
@@ -221,10 +196,8 @@ async def create_item(
         barcode_mod.send_to_printer(barcode_mod.generate_barcode_with_label(item_id, folder_name))
 
     log.info("Created item %s (id=%s) under %r", folder_name, item_id, path or "/")
-    git_backup.git_auto_backup("create", folder_name, str(Path(path) / folder_name), storage.HOUSE_ROOT)
-    storage._invalidate_hierarchy()
-
-    added_path_str = str(Path(path) / folder_name)
+    added_path_str = str(item_path.relative_to(storage.HOUSE_ROOT))
+    git_backup.git_auto_backup("create", folder_name, added_path_str, storage.HOUSE_ROOT)
     return RedirectResponse(
         url=f"/new/{path}?added={urllib.parse.quote(folder_name)}&added_path={urllib.parse.quote(added_path_str)}",
         status_code=303,
@@ -242,23 +215,9 @@ async def delete_item(parent_path: str):
         raise HTTPException(status_code=404, detail="Item not found")
 
     parent_item_path = item_to_delete_path.parent
-    sub_items_to_move, _ = storage.list_directory_items(item_to_delete_path)
-
-    for sub_item in sub_items_to_move:
-        sub_item_path = storage.HOUSE_ROOT / sub_item['path']
-        try:
-            sub_item_path.rename(parent_item_path / sub_item['name'])
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error moving sub-item: {str(e)}")
-
-    try:
-        shutil.rmtree(item_to_delete_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting item: {str(e)}")
-
+    storage.delete_item(item_to_delete_path)
     log.info("Deleted item %s", parent_path)
     git_backup.git_auto_backup("delete", os.path.basename(parent_path), parent_path, storage.HOUSE_ROOT)
-    storage._invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{parent_item_path.relative_to(storage.HOUSE_ROOT)}", status_code=303)
 
 
@@ -430,14 +389,9 @@ async def move_item(request: Request, item_path: str, destination: str = Form(de
     if not destination_path_obj.is_dir():
         raise HTTPException(status_code=400, detail="Destination must be a directory")
 
-    try:
-        item_path_obj.rename(destination_path_obj / item_path_obj.name)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error moving item: {str(e)}")
-
+    storage.move_item(item_path_obj, destination_path_obj)
     log.info("Moved %s to %s", item_path, destination)
     git_backup.git_auto_backup("move", item_path_obj.name, str(destination), storage.HOUSE_ROOT)
-    storage._invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{destination}", status_code=303)
 
 

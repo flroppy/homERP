@@ -184,6 +184,82 @@ def build_item_hierarchy(directory_path, total=0, fields=None):
     return items, total, fields
 
 
+def write_item_index(item_path: Path, item_id: str, fields: dict, content: str):
+    """Write index.md for an item."""
+    (item_path / "index.md").write_text(
+        f"---\n{yaml.dump({'id': item_id, **fields})}---\n{content}")
+
+
+def create_item(parent: Path, name: str, content: str = "", fields: dict | None = None) -> tuple[str, Path]:
+    """Create a new item directory and index.md. Returns (item_id, item_path).
+    Raises FileExistsError if name already exists under parent."""
+    item_path = parent / name
+    if item_path.exists():
+        raise FileExistsError(f"'{name}' already exists here")
+    item_path.mkdir(parents=True)
+    item_id = generate_id()
+    write_item_index(item_path, item_id, fields or {}, content)
+    _invalidate_hierarchy()
+    return item_id, item_path
+
+
+def update_item(item_path: Path, name: str | None = None, content: str | None = None,
+                fields: dict | None = None, replace_fields: bool = False) -> Path:
+    """Update an item's index.md and optionally rename it. Returns the (possibly new) path.
+
+    fields=None leaves existing custom fields untouched.
+    replace_fields=False (default): merge patch — null values delete individual keys.
+    replace_fields=True: treat fields as the complete desired state (used by HTML form).
+    Raises FileExistsError on rename conflict.
+    """
+    metadata = read_index_file(item_path) or {}
+    item_id = metadata.get("id") or generate_id()
+    new_content = content if content is not None else metadata.get("content", "")
+
+    if replace_fields:
+        preserved = fields if fields is not None else {}
+    else:
+        preserved = {k: v for k, v in metadata.items() if k not in SYSTEM_KEYS}
+        if fields is not None:
+            for k, v in fields.items():
+                if v is None:
+                    preserved.pop(k, None)
+                else:
+                    preserved[k] = v
+
+    write_item_index(item_path, item_id, preserved, new_content)
+
+    new_path = item_path
+    if name and name.strip() != item_path.name:
+        new_name = name.strip()
+        dest = item_path.parent / new_name
+        if dest.exists():
+            raise FileExistsError(f"'{new_name}' already exists here")
+        item_path.rename(dest)
+        new_path = dest
+
+    _invalidate_hierarchy()
+    return new_path
+
+
+def delete_item(item_path: Path):
+    """Promote children to parent directory, then remove the item."""
+    parent = item_path.parent
+    children, _ = list_directory_items(item_path)
+    for child in children:
+        (HOUSE_ROOT / child['path']).rename(parent / child['name'])
+    shutil.rmtree(item_path)
+    _invalidate_hierarchy()
+
+
+def move_item(item_path: Path, dest_path: Path) -> Path:
+    """Move item into dest_path. Returns new item path."""
+    new_path = dest_path / item_path.name
+    item_path.rename(new_path)
+    _invalidate_hierarchy()
+    return new_path
+
+
 def find_item_by_id(item_id: str):
     for path in [HOUSE_ROOT] + list(HOUSE_ROOT.rglob('*')):
         if path.is_dir():
