@@ -30,14 +30,14 @@
         {{ metadata.html_content | safe }}
 
         {% if custom_fields %}
-        <dl class="custom-fields">
+        <ul class="field-chips">
             {% for key, value in custom_fields.items() %}
-            <div class="custom-field">
-                <dt>{{ key }}</dt>
-                <dd><a href="/by-field/{{ key }}/{{ value }}">{{ value }}</a></dd>
-            </div>
+            <li class="field-chip">
+                <span class="field-key">{{ key }}:</span>
+                <a href="/by-field/{{ key }}/{{ value }}">{{ value }}</a>
+            </li>
             {% endfor %}
-        </dl>
+        </ul>
         {% endif %}
 
         <div class="item-actions">

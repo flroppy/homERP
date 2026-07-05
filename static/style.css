@@ -176,6 +176,40 @@ button.danger:hover { background: var(--danger); color: var(--bg); }
 .item-chip a { color: var(--text); }
 .item-chip a:hover { color: var(--accent); text-decoration: none; }
 
+/* ── Field chips (custom metadata on item page) ─────────────────────────── */
+.field-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  list-style: none;
+}
+
+.field-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 2rem;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.field-chip .field-key { opacity: 0.6; }
+.field-chip a { color: var(--text); }
+.field-chip a:hover { color: var(--accent); text-decoration: none; }
+
+/* ── Custom field editor rows (edit form) ───────────────────────────────── */
+.field-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.field-row input { flex: 1; width: auto; margin: 0; }
+.field-row button { flex-shrink: 0; margin: 0; }
+
 /* ── Item header (photo + name) ─────────────────────────────────────────── */
 .item-header {
   display: flex;
