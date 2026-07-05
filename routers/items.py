@@ -50,9 +50,11 @@ async def browse(request: Request, path: str = ""):
         current_path = current_path / part
         breadcrumbs.append({"name": part, "path": str(current_path)})
 
+    custom_fields = {k: v for k, v in (metadata or {}).items() if k not in storage.SYSTEM_KEYS}
     return templates.TemplateResponse(request, "item.html", {
         "path": path,
         "metadata": metadata,
+        "custom_fields": custom_fields,
         "items": items,
         "siblings": siblings,
         "attachments": attachments,
@@ -75,11 +77,23 @@ async def edit_item(request: Request, path: str = ""):
     if not item_path.exists():
         raise HTTPException(status_code=404, detail="Item not found")
     metadata = storage.read_index_file(item_path)
-    return templates.TemplateResponse(request, "edit.html", {"path": path, "metadata": metadata})
+    custom_fields = {k: v for k, v in (metadata or {}).items() if k not in storage.SYSTEM_KEYS}
+    return templates.TemplateResponse(request, "edit.html", {
+        "path": path,
+        "metadata": metadata,
+        "custom_fields": custom_fields,
+    })
 
 
 @router.post("/save/{path:path}")
-async def save_item(path: str, name: str = Form(...), content: str = Form(default=""), photo: UploadFile = File(...)):
+async def save_item(
+    path: str,
+    name: str = Form(...),
+    content: str = Form(default=""),
+    photo: UploadFile = File(...),
+    field_key: list[str] = Form(default=[]),
+    field_value: list[str] = Form(default=[]),
+):
     name = name.strip()
     item_path = storage.HOUSE_ROOT / path
     index_path = item_path / "index.md"
@@ -95,13 +109,23 @@ async def save_item(path: str, name: str = Form(...), content: str = Form(defaul
         item_id = metadata.get("id", "")
     except Exception:
         log.warning("Could not read existing metadata for %s, generating new ID", item_path)
+        metadata = {}
         item_id = ""
 
     if not item_id:
         item_id = storage.generate_id()
 
+    preserved = {k: v for k, v in (metadata or {}).items() if k not in storage.SYSTEM_KEYS}
+    for k, v in zip(field_key, field_value):
+        k = k.strip()
+        if k:
+            if v.strip():
+                preserved[k] = v.strip()
+            else:
+                preserved.pop(k, None)
+
     with open(index_path, "w") as f:
-        f.write(f"---\n{yaml.dump({'id': item_id})}---\n{content}")
+        f.write(f"---\n{yaml.dump({'id': item_id, **preserved})}---\n{content}")
 
     if os.path.basename(item_path) != name:
         new_path = Path(os.path.dirname(item_path)) / name
@@ -418,6 +442,20 @@ async def move_item(request: Request, item_path: str, destination: str = Form(de
     git_backup.git_auto_backup("move", item_path_obj.name, str(destination), storage.HOUSE_ROOT)
     storage._invalidate_hierarchy()
     return RedirectResponse(url=f"/browse/{destination}", status_code=303)
+
+
+@router.get("/by-field/{field}/{value:path}", response_class=HTMLResponse)
+async def browse_by_field(request: Request, field: str, value: str):
+    all_items, _ = storage.list_all_items(storage.HOUSE_ROOT)
+    results = [
+        item for item in all_items
+        if str(item.get(field, "")).lower() == value.lower()
+    ]
+    return templates.TemplateResponse(request, "field_results.html", {
+        "field": field,
+        "value": value,
+        "results": results,
+    })
 
 
 @router.get("/git-status")

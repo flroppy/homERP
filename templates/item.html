@@ -29,6 +29,17 @@
 
         {{ metadata.html_content | safe }}
 
+        {% if custom_fields %}
+        <dl class="custom-fields">
+            {% for key, value in custom_fields.items() %}
+            <div class="custom-field">
+                <dt>{{ key }}</dt>
+                <dd><a href="/by-field/{{ key }}/{{ value }}">{{ value }}</a></dd>
+            </div>
+            {% endfor %}
+        </dl>
+        {% endif %}
+
         <div class="item-actions">
             <button aria-label="Edit {{ metadata.name }}" title="Edit" onclick="location.href='/edit/{{ path }}'">✏️</button>
             <button aria-label="Move {{ metadata.name }}" title="Move" onclick="location.href='/move/{{ path }}'">↔️</button>

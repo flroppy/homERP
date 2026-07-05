@@ -18,6 +18,7 @@ HOUSE_ROOT.mkdir(exist_ok=True)
 
 IGNORED_ATTACHMENTS = ['index.md', 'photo.jpg', 'thumbnail.jpg']
 UUID_LENGTH = 8
+SYSTEM_KEYS = frozenset({'id', 'name', 'path', 'content', 'html_content', 'photo_path'})
 
 _hierarchy_cache: tuple | None = None
 

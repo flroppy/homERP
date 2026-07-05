@@ -15,7 +15,32 @@
         <label for="photo">Photo</label>
         <input type="file" id="photo" name="photo" accept="image/png, image/jpeg" capture="environment">
 
+        <fieldset id="custom-fields-section">
+            <legend>Fields</legend>
+            <div id="fields-container">
+                {% for key, value in custom_fields.items() %}
+                <div class="field-row">
+                    <input type="text" name="field_key" value="{{ key }}" placeholder="key" aria-label="Field key">
+                    <input type="text" name="field_value" value="{{ value }}" placeholder="value" aria-label="Field value">
+                    <button type="button" aria-label="Remove field" onclick="this.closest('.field-row').remove()">✕</button>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" onclick="addField()">Add field</button>
+        </fieldset>
+
         <button type="submit">Save Changes</button>
         <a href="/browse/{{ path }}">Cancel</a>
     </form>
+    <script>
+    function addField() {
+        const row = document.createElement('div');
+        row.className = 'field-row';
+        row.innerHTML = '<input type="text" name="field_key" placeholder="key" aria-label="Field key">'
+                      + '<input type="text" name="field_value" placeholder="value" aria-label="Field value">'
+                      + '<button type="button" aria-label="Remove field" onclick="this.closest(\'.field-row\').remove()">✕</button>';
+        document.getElementById('fields-container').appendChild(row);
+        row.querySelector('input').focus();
+    }
+    </script>
 {% endblock %}

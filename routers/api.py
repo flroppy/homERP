@@ -3,7 +3,7 @@ import os
 import shutil
 import yaml
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Security, UploadFile
 from fastapi.responses import FileResponse, Response
 from fastapi.security import APIKeyHeader
@@ -31,11 +31,13 @@ router = APIRouter(prefix="/api", dependencies=[Depends(verify_api_key)])
 class CreateItem(BaseModel):
     name: str
     content: str = ""
+    fields: dict[str, Any] = {}
 
 
 class UpdateItem(BaseModel):
     name: Optional[str] = None
     content: Optional[str] = None
+    fields: Optional[dict[str, Any]] = None
 
 
 class MoveItem(BaseModel):
@@ -207,7 +209,7 @@ async def create_item(body: CreateItem, path: str = ""):
     item_path.mkdir(parents=True)
     item_id = storage.generate_id()
     (item_path / "index.md").write_text(
-        f"---\n{yaml.dump({'name': name, 'id': item_id})}---\n{body.content}")
+        f"---\n{yaml.dump({'name': name, 'id': item_id, **body.fields})}---\n{body.content}")
     log.info("API created item %s (id=%s) under %r", name, item_id, path or "/")
     git_backup.git_auto_backup("create", name, str(Path(path) / name), storage.HOUSE_ROOT)
     storage._invalidate_hierarchy()
@@ -222,8 +224,11 @@ async def update_item(body: UpdateItem, path: str = ""):
     metadata = storage.read_index_file(item_path) or {}
     item_id = metadata.get("id") or storage.generate_id()
     content = body.content if body.content is not None else metadata.get("content", "")
+    preserved = {k: v for k, v in metadata.items() if k not in storage.SYSTEM_KEYS}
+    if body.fields is not None:
+        preserved.update(body.fields)
     (item_path / "index.md").write_text(
-        f"---\n{yaml.dump({'id': item_id})}---\n{content}")
+        f"---\n{yaml.dump({'id': item_id, **preserved})}---\n{content}")
     new_path = path
     if body.name and body.name.strip() != item_path.name:
         name = body.name.strip()
@@ -261,6 +266,29 @@ async def get_tree():
     """Return all items as a nested tree (id, name, path, children). No content fields."""
     nodes, total = storage.get_hierarchy()
     return {"total": total, "tree": _serialize_tree(nodes)}
+
+
+@router.get("/filter")
+async def filter_items(field: str, value: str):
+    """List all items where a custom field equals the given value (case-insensitive)."""
+    items, _ = storage.list_all_items(storage.HOUSE_ROOT)
+    results = [
+        _serialize(item) for item in items
+        if str(item.get(field, "")).lower() == value.lower()
+    ]
+    return {"field": field, "value": value, "results": results}
+
+
+@router.get("/fields")
+async def list_fields():
+    """Return all distinct custom field names and their known values across the inventory."""
+    items, _ = storage.list_all_items(storage.HOUSE_ROOT)
+    fields: dict[str, set] = {}
+    for item in items:
+        for k, v in item.items():
+            if k not in storage.SYSTEM_KEYS and v is not None:
+                fields.setdefault(k, set()).add(str(v))
+    return {k: sorted(v) for k, v in sorted(fields.items())}
 
 
 @router.get("/search")

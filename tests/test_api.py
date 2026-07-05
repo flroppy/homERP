@@ -111,6 +111,77 @@ def test_move_item_by_id(client, data_dir):
     assert (data_dir / 'Dest' / 'Mover').is_dir()
 
 
+# --- Custom fields ---
+
+def test_create_item_with_fields(client, data_dir):
+    r = client.post('/api/items/', json={'name': 'Game', 'fields': {'category': 'Board Games', 'players': '2-4'}})
+    assert r.status_code == 201
+    index = (data_dir / 'Game' / 'index.md').read_text()
+    assert 'category: Board Games' in index
+    assert 'players: 2-4' in index
+
+
+def test_get_item_returns_fields(client, data_dir):
+    client.post('/api/items/', json={'name': 'Tagged', 'fields': {'category': 'Board Games'}})
+    r = client.get('/api/items/Tagged')
+    assert r.status_code == 200
+    assert r.json()['category'] == 'Board Games'
+
+
+def test_update_item_preserves_existing_fields(client, data_dir):
+    client.post('/api/items/', json={'name': 'Preserve', 'fields': {'category': 'Games', 'condition': 'Good'}})
+    r = client.patch('/api/items/Preserve', json={'content': 'updated'})
+    assert r.status_code == 200
+    index = (data_dir / 'Preserve' / 'index.md').read_text()
+    assert 'category: Games' in index
+    assert 'condition: Good' in index
+
+
+def test_update_item_merges_new_fields(client, data_dir):
+    client.post('/api/items/', json={'name': 'Merge', 'fields': {'category': 'Games'}})
+    client.patch('/api/items/Merge', json={'fields': {'condition': 'Good'}})
+    index = (data_dir / 'Merge' / 'index.md').read_text()
+    assert 'category: Games' in index
+    assert 'condition: Good' in index
+
+
+def test_update_item_overwrites_field(client, data_dir):
+    client.post('/api/items/', json={'name': 'Overwrite', 'fields': {'category': 'Games'}})
+    client.patch('/api/items/Overwrite', json={'fields': {'category': 'Card Games'}})
+    r = client.get('/api/items/Overwrite')
+    assert r.json()['category'] == 'Card Games'
+
+
+def test_filter_by_field(client):
+    client.post('/api/items/', json={'name': 'Chess', 'fields': {'category': 'Board Games'}})
+    client.post('/api/items/', json={'name': 'Poker', 'fields': {'category': 'Card Games'}})
+    r = client.get('/api/filter?field=category&value=Board+Games')
+    assert r.status_code == 200
+    data = r.json()
+    assert data['field'] == 'category'
+    names = [i['name'] for i in data['results']]
+    assert 'Chess' in names
+    assert 'Poker' not in names
+
+
+def test_filter_case_insensitive(client):
+    client.post('/api/items/', json={'name': 'Risk', 'fields': {'category': 'Board Games'}})
+    r = client.get('/api/filter?field=category&value=board+games')
+    names = [i['name'] for i in r.json()['results']]
+    assert 'Risk' in names
+
+
+def test_list_fields(client):
+    client.post('/api/items/', json={'name': 'A', 'fields': {'category': 'Board Games'}})
+    client.post('/api/items/', json={'name': 'B', 'fields': {'category': 'Card Games', 'condition': 'Good'}})
+    r = client.get('/api/fields')
+    assert r.status_code == 200
+    data = r.json()
+    assert 'Board Games' in data['category']
+    assert 'Card Games' in data['category']
+    assert 'Good' in data['condition']
+
+
 # --- Photo ---
 
 def test_upload_photo_jpeg(client, item, data_dir):

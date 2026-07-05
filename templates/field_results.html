@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ field }}: {{ value }} - House Inventory{% endblock %}
+
+{% block header %}
+    <nav aria-label="breadcrumb">
+        <ul>
+            <li><a href="/browse/">Home</a></li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <h1>{{ field }}: {{ value }}</h1>
+
+    {% if results %}
+        <ul>
+        {% for item in results %}
+            <li><a href="/browse/{{ item.path }}">{{ item.name }}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No items found.</p>
+    {% endif %}
+{% endblock %}
