@@ -444,6 +444,13 @@ async def move_item(request: Request, item_path: str, destination: str = Form(de
     return RedirectResponse(url=f"/browse/{destination}", status_code=303)
 
 
+@router.get("/fields", response_class=HTMLResponse)
+async def fields_index(request: Request):
+    return templates.TemplateResponse(request, "fields.html", {
+        "fields": storage.get_fields(),
+    })
+
+
 @router.get("/by-field/{field}/{value:path}", response_class=HTMLResponse)
 async def browse_by_field(request: Request, field: str, value: str):
     all_items, _ = storage.list_all_items(storage.HOUSE_ROOT)

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Fields - House Inventory{% endblock %}
+
+{% block header %}
+    <nav aria-label="breadcrumb">
+        <ul>
+            <li><a href="/browse/">Home</a></li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <h1>Fields</h1>
+
+    {% if fields %}
+        {% for field, values in fields.items() %}
+        <section>
+            <h3>{{ field }}</h3>
+            <ul class="item-chips">
+                {% for value in values %}
+                <li class="item-chip">
+                    <a href="/by-field/{{ field }}/{{ value }}">{{ value }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endfor %}
+    {% else %}
+        <p>No custom fields have been added to any items yet.</p>
+    {% endif %}
+{% endblock %}
