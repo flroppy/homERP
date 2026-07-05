@@ -171,6 +171,8 @@ async def create_item(
     content: str = Form(default=""),
     photo: Optional[UploadFile] = File(default=None),
     label: str = Form(default="no"),
+    field_key: list[str] = Form(default=[]),
+    field_value: list[str] = Form(default=[]),
 ):
     folder_name = name.strip()
     if not folder_name:
@@ -178,9 +180,15 @@ async def create_item(
     if '?' in folder_name:
         raise HTTPException(status_code=400, detail="? not allowed in name")
 
+    fields = {}
+    for k, v in zip(field_key, field_value):
+        k = k.strip()
+        if k and v.strip():
+            fields[k] = v.strip()
+
     parent = storage.HOUSE_ROOT / path
     try:
-        item_id, item_path = storage.create_item(parent, folder_name, content)
+        item_id, item_path = storage.create_item(parent, folder_name, content, fields)
     except FileExistsError:
         raise HTTPException(status_code=409, detail=f"'{folder_name}' already exists here")
 

@@ -30,6 +30,12 @@
         <label for="item-content">Description <small>(optional)</small></label>
         <textarea id="item-content" name="content" rows="2"></textarea>
 
+        <fieldset id="custom-fields-section">
+            <legend>Fields <small>(optional)</small></legend>
+            <div id="fields-container"></div>
+            <button type="button" onclick="addField()">Add field</button>
+        </fieldset>
+
         <fieldset>
             <legend>Print label?</legend>
             <label><input type="radio" name="label" value="no"> No label</label>
@@ -72,6 +78,7 @@
     <ul id="session-list"></ul>
 </section>
 
+<script src="/static/fields-autocomplete.js"></script>
 <script>
 const PARENT = {{ parent_path | tojson }};
 const SESSION_KEY = 'addSession:' + PARENT;
