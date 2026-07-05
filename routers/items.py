@@ -115,14 +115,11 @@ async def save_item(
     if not item_id:
         item_id = storage.generate_id()
 
-    preserved = {k: v for k, v in (metadata or {}).items() if k not in storage.SYSTEM_KEYS}
+    preserved = {}
     for k, v in zip(field_key, field_value):
         k = k.strip()
-        if k:
-            if v.strip():
-                preserved[k] = v.strip()
-            else:
-                preserved.pop(k, None)
+        if k and v.strip():
+            preserved[k] = v.strip()
 
     with open(index_path, "w") as f:
         f.write(f"---\n{yaml.dump({'id': item_id, **preserved})}---\n{content}")

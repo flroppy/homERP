@@ -169,7 +169,7 @@ def update_item(
     path: Path,
     name: Annotated[str, Field(description="New name. Omit or pass '' to keep the current name.")] = "",
     content: Annotated[str, Field(description="New markdown content. Omit or pass '' to keep the current content.")] = "",
-    fields: Annotated[dict[str, str] | None, Field(description="Custom fields to set or update. Merged with existing fields — omit to leave fields untouched, pass {} to clear all custom fields.")] = None,
+    fields: Annotated[dict[str, str | None] | None, Field(description="Custom fields to set, update, or remove. Merged with existing fields — omit to leave untouched. Set a key to null to delete it, e.g. {\"category\": null}.")] = None,
 ) -> str:
     """Rename an item, update its markdown content, and/or set custom fields. Returns the (possibly new) path."""
     body = {}

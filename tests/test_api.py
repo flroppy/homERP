@@ -152,6 +152,14 @@ def test_update_item_overwrites_field(client, data_dir):
     assert r.json()['category'] == 'Card Games'
 
 
+def test_update_item_deletes_field_with_null(client, data_dir):
+    client.post('/api/items/', json={'name': 'Delete', 'fields': {'category': 'Games', 'condition': 'Good'}})
+    client.patch('/api/items/Delete', json={'fields': {'category': None}})
+    r = client.get('/api/items/Delete')
+    assert 'category' not in r.json()
+    assert r.json()['condition'] == 'Good'
+
+
 def test_filter_by_field(client):
     client.post('/api/items/', json={'name': 'Chess', 'fields': {'category': 'Board Games'}})
     client.post('/api/items/', json={'name': 'Poker', 'fields': {'category': 'Card Games'}})

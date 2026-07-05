@@ -37,7 +37,7 @@ class CreateItem(BaseModel):
 class UpdateItem(BaseModel):
     name: Optional[str] = None
     content: Optional[str] = None
-    fields: Optional[dict[str, Any]] = None
+    fields: Optional[dict[str, Any]] = None  # null value for a key removes that field
 
 
 class MoveItem(BaseModel):
@@ -226,7 +226,11 @@ async def update_item(body: UpdateItem, path: str = ""):
     content = body.content if body.content is not None else metadata.get("content", "")
     preserved = {k: v for k, v in metadata.items() if k not in storage.SYSTEM_KEYS}
     if body.fields is not None:
-        preserved.update(body.fields)
+        for k, v in body.fields.items():
+            if v is None:
+                preserved.pop(k, None)
+            else:
+                preserved[k] = v
     (item_path / "index.md").write_text(
         f"---\n{yaml.dump({'id': item_id, **preserved})}---\n{content}")
     new_path = path
