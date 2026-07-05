@@ -201,7 +201,8 @@ def fuzzy_search(query, items, attachments):
 
     for item in items:
         metadata = read_index_file(HOUSE_ROOT / item["path"])
-        content_score = fuzz.partial_ratio(query, metadata["content"])
+        field_text = " ".join(str(v) for k, v in metadata.items() if k not in SYSTEM_KEYS and v)
+        content_score = fuzz.partial_ratio(query, metadata["content"] + " " + field_text)
         if content_score > 50 and item["name"] not in results:
             results[item["name"]] = {
                 "type": "item_content",
