@@ -20,23 +20,39 @@ function _acShow(input, getOptions) {
     if (!items.length) return;
 
     const rect = input.getBoundingClientRect();
-    const ul = document.createElement('ul');
+    const bg   = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#fff';
+    const ul   = document.createElement('ul');
     ul.className = 'autocomplete-list';
     ul.style.cssText =
         'position:fixed;top:' + rect.bottom + 'px;left:' + rect.left +
-        'px;width:' + rect.width + 'px;z-index:9999';
+        'px;width:' + rect.width + 'px;z-index:9999;background:' + bg + ';';
 
     items.forEach(text => {
         const li = document.createElement('li');
         li.textContent = text;
-        const select = e => {
+
+        // Desktop: mousedown fires before blur, so we can prevent blur and set value.
+        li.addEventListener('mousedown', e => {
             e.preventDefault();
             input.value = text;
             _acDismiss();
             input.dispatchEvent(new Event('ac-select', { bubbles: true }));
-        };
-        li.addEventListener('mousedown', select);
-        li.addEventListener('touchend',  select);
+        });
+
+        // Mobile: distinguish tap from scroll via touchmove.
+        // touchmove also dismisses the list globally (see below), so by the time
+        // touchend fires after a scroll the isTap flag is already false.
+        let isTap = false;
+        li.addEventListener('touchstart', () => { isTap = true;  }, { passive: true });
+        li.addEventListener('touchmove',  () => { isTap = false; }, { passive: true });
+        li.addEventListener('touchend', e => {
+            if (!isTap) return;
+            e.preventDefault(); // prevent synthetic mousedown/click double-fire
+            input.value = text;
+            _acDismiss();
+            input.dispatchEvent(new Event('ac-select', { bubbles: true }));
+        });
+
         ul.appendChild(li);
     });
 
@@ -49,8 +65,9 @@ function _acDismiss() {
     _acTarget = null;
 }
 
-document.addEventListener('click',  e => { if (e.target !== _acTarget) _acDismiss(); });
-document.addEventListener('scroll', _acDismiss, { passive: true, capture: true });
+document.addEventListener('click',     e  => { if (e.target !== _acTarget) _acDismiss(); });
+document.addEventListener('touchmove', _acDismiss, { passive: true });
+document.addEventListener('scroll',    _acDismiss, { passive: true, capture: true });
 
 // ── Fields editor ─────────────────────────────────────────────────────────────
 
