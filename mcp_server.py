@@ -89,7 +89,7 @@ def filter_by_field(
 
 @mcp.tool(name="homerp tree")
 def tree() -> str:
-    """Return the full inventory as a nested tree (id, name, path, children). No content or attachments — use browse() for details on a specific item."""
+    """Return the full inventory as a nested tree (id, name, children). No path (reconstruct by traversing names), no content or attachments — use browse() for details on a specific item."""
     with _client() as c:
         r = c.get("/api/tree")
         r.raise_for_status()
