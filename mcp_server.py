@@ -96,6 +96,15 @@ def tree() -> str:
         return _fmt(r.json())
 
 
+@mcp.tool(name="homerp get photo")
+def get_photo(path: Path) -> str:
+    """Download the photo for an item, returned as base64. MCP parameters are JSON so binary must be base64-encoded."""
+    with _client() as c:
+        r = c.get(f"/api/items/{path}/photo")
+        r.raise_for_status()
+        return f"Photo (base64):\n{base64.b64encode(r.content).decode()}"
+
+
 @mcp.tool(name="homerp upload photo")
 def upload_photo(
     path: Path,
@@ -214,6 +223,18 @@ def read_attachment(
         if ext == ".pdf":
             return f"PDF content (base64):\n{base64.b64encode(r.content).decode()}"
         return r.text
+
+
+@mcp.tool(name="homerp delete attachment")
+def delete_attachment(
+    path: Path,
+    filename: Annotated[str, Field(description="Filename including extension, e.g. 'receipt.pdf'.")],
+) -> str:
+    """Delete a file attachment from an item."""
+    with _client() as c:
+        r = c.delete(f"/api/items/{path}/attachments/{filename}")
+        r.raise_for_status()
+        return "deleted"
 
 
 @mcp.tool(name="homerp write attachment")
