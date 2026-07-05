@@ -4,22 +4,28 @@
 //   input      — the <input> element to attach to
 //   getOptions — function(currentValue) → string[] of suggestions
 //
-// Renders a .autocomplete-list <ul> positioned inside the nearest .ac-wrap
-// ancestor. Dismisses on outside click/touch.
+// The dropdown is appended to <body> and positioned with getBoundingClientRect
+// so it floats above all content regardless of ancestors' overflow/position.
 
 function autocomplete(input, getOptions) {
-    input.addEventListener('input',  () => _acShow(input, getOptions));
-    input.addEventListener('focus',  () => _acShow(input, getOptions));
+    input.addEventListener('input', () => _acShow(input, getOptions));
+    input.addEventListener('focus', () => _acShow(input, getOptions));
 }
+
+let _acTarget = null;
 
 function _acShow(input, getOptions) {
     _acDismiss();
     const items = getOptions(input.value);
     if (!items.length) return;
-    const wrap = input.closest('.ac-wrap');
-    if (!wrap) return;
+
+    const rect = input.getBoundingClientRect();
     const ul = document.createElement('ul');
     ul.className = 'autocomplete-list';
+    ul.style.cssText =
+        'position:fixed;top:' + rect.bottom + 'px;left:' + rect.left +
+        'px;width:' + rect.width + 'px;z-index:9999';
+
     items.forEach(text => {
         const li = document.createElement('li');
         li.textContent = text;
@@ -33,16 +39,18 @@ function _acShow(input, getOptions) {
         li.addEventListener('touchend',  select);
         ul.appendChild(li);
     });
-    wrap.appendChild(ul);
+
+    _acTarget = input;
+    document.body.appendChild(ul);
 }
 
 function _acDismiss() {
     document.querySelectorAll('.autocomplete-list').forEach(el => el.remove());
+    _acTarget = null;
 }
 
-document.addEventListener('click', e => {
-    if (!e.target.closest('.ac-wrap')) _acDismiss();
-});
+document.addEventListener('click',  e => { if (e.target !== _acTarget) _acDismiss(); });
+document.addEventListener('scroll', _acDismiss, { passive: true, capture: true });
 
 // ── Fields editor ─────────────────────────────────────────────────────────────
 
@@ -60,10 +68,9 @@ function _attachFieldRow(row) {
         const vals = _fields[keyInput.value] || [];
         return q ? vals.filter(v => v.toLowerCase().includes(q.toLowerCase())) : vals;
     });
-    // After picking a key, open value suggestions automatically
     keyInput.addEventListener('ac-select', () => {
         valInput.focus();
-        _acShow(valInput, q => _fields[keyInput.value] || []);
+        _acShow(valInput, () => _fields[keyInput.value] || []);
     });
 }
 
@@ -71,13 +78,12 @@ function addField() {
     const row = document.createElement('div');
     row.className = 'field-row';
     row.innerHTML =
-        '<div class="ac-wrap"><input type="text" name="field_key" placeholder="key" aria-label="Field key"></div>'
-      + '<div class="ac-wrap"><input type="text" name="field_value" placeholder="value" aria-label="Field value"></div>'
+        '<input type="text" name="field_key" placeholder="key" aria-label="Field key">'
+      + '<input type="text" name="field_value" placeholder="value" aria-label="Field value">'
       + '<button type="button" aria-label="Remove field" onclick="this.closest(\'.field-row\').remove()">✕</button>';
     document.getElementById('fields-container').appendChild(row);
     _attachFieldRow(row);
     row.querySelector('input').focus();
 }
 
-// Attach autocomplete to any pre-populated rows (edit form)
 document.querySelectorAll('.field-row').forEach(_attachFieldRow);
