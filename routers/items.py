@@ -210,7 +210,7 @@ async def create_item(
 
     item_id = storage.generate_id()
     (item_path / "index.md").write_text(
-        f"---\n{yaml.dump({'name': folder_name, 'id': item_id})}---\n{content}")
+        f"---\n{yaml.dump({'id': item_id})}---\n{content}")
 
     if photo and photo.size > 0:
         if photo.content_type in ['image/png', 'image/jpeg']:

@@ -209,7 +209,7 @@ async def create_item(body: CreateItem, path: str = ""):
     item_path.mkdir(parents=True)
     item_id = storage.generate_id()
     (item_path / "index.md").write_text(
-        f"---\n{yaml.dump({'name': name, 'id': item_id, **body.fields})}---\n{body.content}")
+        f"---\n{yaml.dump({'id': item_id, **body.fields})}---\n{body.content}")
     log.info("API created item %s (id=%s) under %r", name, item_id, path or "/")
     git_backup.git_auto_backup("create", name, str(Path(path) / name), storage.HOUSE_ROOT)
     storage._invalidate_hierarchy()
