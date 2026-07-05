@@ -16,7 +16,7 @@
     {% if fields %}
         {% for field, values in fields.items() %}
         <section>
-            <h3>{{ field }}</h3>
+            <h3 id="{{ field }}">{{ field }}</h3>
             <ul class="item-chips">
                 {% for value in values %}
                 <li class="item-chip">

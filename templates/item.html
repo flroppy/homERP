@@ -33,7 +33,7 @@
         <ul class="field-chips">
             {% for key, value in custom_fields.items() %}
             <li class="field-chip">
-                <span class="field-key">{{ key }}:</span>
+                <a class="field-key" href="/fields#{{ key }}">{{ key }}:</a>
                 <a href="/by-field/{{ key }}/{{ value }}">{{ value }}</a>
             </li>
             {% endfor %}
