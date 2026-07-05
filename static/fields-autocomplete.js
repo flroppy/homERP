@@ -1,12 +1,20 @@
-// Custom autocomplete for field key/value inputs. Works on mobile.
-// Requires .ac-wrap wrappers around inputs and #fields-container in the form.
+// Generic autocomplete for text inputs. Works on desktop and mobile.
+//
+// autocomplete(input, getOptions)
+//   input      — the <input> element to attach to
+//   getOptions — function(currentValue) → string[] of suggestions
+//
+// Renders a .autocomplete-list <ul> positioned inside the nearest .ac-wrap
+// ancestor. Dismisses on outside click/touch.
 
-let _fields = {};
+function autocomplete(input, getOptions) {
+    input.addEventListener('input',  () => _acShow(input, getOptions));
+    input.addEventListener('focus',  () => _acShow(input, getOptions));
+}
 
-fetch('/api/fields').then(r => r.json()).then(data => { _fields = data; });
-
-function _showAcList(input, items) {
-    _dismissAcList();
+function _acShow(input, getOptions) {
+    _acDismiss();
+    const items = getOptions(input.value);
     if (!items.length) return;
     const wrap = input.closest('.ac-wrap');
     if (!wrap) return;
@@ -18,52 +26,58 @@ function _showAcList(input, items) {
         const select = e => {
             e.preventDefault();
             input.value = text;
-            _dismissAcList();
-            if (input.name === 'field_key') {
-                const valInput = input.closest('.field-row').querySelector('[name="field_value"]');
-                if (valInput) { valInput.focus(); onValueFocus(valInput); }
-            }
+            _acDismiss();
+            input.dispatchEvent(new Event('ac-select', { bubbles: true }));
         };
         li.addEventListener('mousedown', select);
-        li.addEventListener('touchend', select);
+        li.addEventListener('touchend',  select);
         ul.appendChild(li);
     });
     wrap.appendChild(ul);
 }
 
-function _dismissAcList() {
+function _acDismiss() {
     document.querySelectorAll('.autocomplete-list').forEach(el => el.remove());
 }
 
-function onKeyInput(input) {
-    const q = input.value.toLowerCase();
-    const keys = Object.keys(_fields).filter(k => !q || k.toLowerCase().includes(q));
-    _showAcList(input, keys);
-}
+document.addEventListener('click', e => {
+    if (!e.target.closest('.ac-wrap')) _acDismiss();
+});
 
-function onValueInput(input) {
-    const key = input.closest('.field-row').querySelector('[name="field_key"]').value;
-    const q = input.value.toLowerCase();
-    const vals = (_fields[key] || []).filter(v => !q || v.toLowerCase().includes(q));
-    _showAcList(input, vals);
-}
+// ── Fields editor ─────────────────────────────────────────────────────────────
 
-function onValueFocus(input) {
-    const key = input.closest('.field-row').querySelector('[name="field_key"]').value;
-    _showAcList(input, _fields[key] || []);
+let _fields = {};
+fetch('/api/fields').then(r => r.json()).then(data => { _fields = data; });
+
+function _attachFieldRow(row) {
+    const keyInput = row.querySelector('[name="field_key"]');
+    const valInput = row.querySelector('[name="field_value"]');
+    autocomplete(keyInput, q => {
+        const keys = Object.keys(_fields);
+        return q ? keys.filter(k => k.toLowerCase().includes(q.toLowerCase())) : keys;
+    });
+    autocomplete(valInput, q => {
+        const vals = _fields[keyInput.value] || [];
+        return q ? vals.filter(v => v.toLowerCase().includes(q.toLowerCase())) : vals;
+    });
+    // After picking a key, open value suggestions automatically
+    keyInput.addEventListener('ac-select', () => {
+        valInput.focus();
+        _acShow(valInput, q => _fields[keyInput.value] || []);
+    });
 }
 
 function addField() {
     const row = document.createElement('div');
     row.className = 'field-row';
     row.innerHTML =
-        '<div class="ac-wrap"><input type="text" name="field_key" placeholder="key" aria-label="Field key" oninput="onKeyInput(this)" onfocus="onKeyInput(this)"></div>'
-      + '<div class="ac-wrap"><input type="text" name="field_value" placeholder="value" aria-label="Field value" oninput="onValueInput(this)" onfocus="onValueFocus(this)"></div>'
+        '<div class="ac-wrap"><input type="text" name="field_key" placeholder="key" aria-label="Field key"></div>'
+      + '<div class="ac-wrap"><input type="text" name="field_value" placeholder="value" aria-label="Field value"></div>'
       + '<button type="button" aria-label="Remove field" onclick="this.closest(\'.field-row\').remove()">✕</button>';
     document.getElementById('fields-container').appendChild(row);
+    _attachFieldRow(row);
     row.querySelector('input').focus();
 }
 
-document.addEventListener('click', e => {
-    if (!e.target.closest('.ac-wrap')) _dismissAcList();
-});
+// Attach autocomplete to any pre-populated rows (edit form)
+document.querySelectorAll('.field-row').forEach(_attachFieldRow);

@@ -20,8 +20,8 @@
             <div id="fields-container">
                 {% for key, value in custom_fields.items() %}
                 <div class="field-row">
-                    <div class="ac-wrap"><input type="text" name="field_key" value="{{ key }}" placeholder="key" aria-label="Field key" oninput="onKeyInput(this)" onfocus="onKeyInput(this)"></div>
-                    <div class="ac-wrap"><input type="text" name="field_value" value="{{ value }}" placeholder="value" aria-label="Field value" oninput="onValueInput(this)" onfocus="onValueFocus(this)"></div>
+                    <div class="ac-wrap"><input type="text" name="field_key" value="{{ key }}" placeholder="key" aria-label="Field key"></div>
+                    <div class="ac-wrap"><input type="text" name="field_value" value="{{ value }}" placeholder="value" aria-label="Field value"></div>
                     <button type="button" aria-label="Remove field" onclick="this.closest('.field-row').remove()">✕</button>
                 </div>
                 {% endfor %}

@@ -1,39 +1,66 @@
 {% extends "base.html" %}
-
 {% block title %}Move {{ item_name }} - House Inventory{% endblock %}
-
 {% block header %}Move {{ item_name }}{% endblock %}
 
 {% block content %}
-    <form action="/move/{{ item_path }}" method="post" id="move-item">
-        <label for="by_id">Destination ID</label>
-        <input type="text" id="by_id" name="by_id" placeholder="8-character ID" autofocus>
+    <form action="/move/{{ item_path }}" method="post" id="move-form">
+        <input type="hidden" name="destination" id="destination-value">
+        <input type="hidden" name="by_id" id="by-id-value">
 
-        <label for="search">Filter destination</label>
-        <input type="text" id="search" name="search" placeholder="Search items…" oninput="filterItems()">
+        <label for="destination-input">Move to</label>
+        <div class="ac-wrap">
+            <input type="text" id="destination-input" placeholder="Search for a location…" autocomplete="off" autofocus>
+        </div>
+        <small id="destination-hint" style="color:var(--muted)"></small>
 
-        <label for="destination">Choose a destination</label>
-        <select id="destination" name="destination">
-            {% for item in items %}
-                <option value="{{ item.path }}">{{ item.path }}</option>
-            {% endfor %}
-        </select>
-
-        <button type="submit">Move</button>
-        <a href="/browse/{{ parent_path }}">Cancel</a>
+        <button type="submit" id="move-btn" disabled>Move here</button>
+        <a href="/browse/{{ item_path }}">Cancel</a>
     </form>
 
+    <script src="/static/fields-autocomplete.js"></script>
     <script>
-        function filterItems() {
-            const term = document.getElementById('search').value.toLowerCase();
-            const options = document.querySelectorAll('select#destination option');
-            options.forEach(o => { o.style.display = o.textContent.toLowerCase().includes(term) ? '' : 'none'; });
-            const first = Array.from(options).find(o => o.style.display !== 'none');
-            if (first) document.getElementById('destination').value = first.value;
-        }
+    let _paths = [];
 
-        document.getElementById('by_id').addEventListener('input', function () {
-            if (this.value.length === 8) document.getElementById('move-item').submit();
-        });
+    fetch('/api/tree').then(r => r.json()).then(data => {
+        _paths = [];
+        function walk(nodes, prefix) {
+            nodes.forEach(n => {
+                const p = prefix ? prefix + '/' + n.name : n.name;
+                _paths.push(p);
+                walk(n.children || [], p);
+            });
+        }
+        walk(data.tree || [], '');
+        // Remove the item being moved and its descendants from options
+        const self = {{ item_path | tojson }};
+        _paths = _paths.filter(p => p !== self && !p.startsWith(self + '/'));
+    });
+
+    const input   = document.getElementById('destination-input');
+    const hidden  = document.getElementById('destination-value');
+    const hint    = document.getElementById('destination-hint');
+    const btn     = document.getElementById('move-btn');
+
+    autocomplete(input, q => {
+        if (!q) return _paths.slice(0, 20);
+        return _paths.filter(p => p.toLowerCase().includes(q.toLowerCase())).slice(0, 20);
+    });
+
+    function selectPath(path) {
+        hidden.value = path;
+        hint.textContent = path ? 'Destination: ' + path : '';
+        btn.disabled = !path;
+    }
+
+    input.addEventListener('ac-select', () => selectPath(input.value));
+    input.addEventListener('input',     () => selectPath(''));
+
+    // Auto-submit on exact 8-char ID entry (existing behaviour)
+    input.addEventListener('input', function () {
+        if (/^[A-Za-z0-9_-]{8}$/.test(this.value)) {
+            document.getElementById('by-id-value').value = this.value;
+            document.getElementById('move-form').submit();
+        }
+    });
     </script>
 {% endblock %}

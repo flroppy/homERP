@@ -373,11 +373,9 @@ async def move_item_select(request: Request, item_path: str = ""):
     item_path_obj = storage.HOUSE_ROOT / item_path
     if not item_path_obj.exists():
         raise HTTPException(status_code=404, detail="Item not found")
-    all_items, _ = storage.list_all_items(storage.HOUSE_ROOT)
     return templates.TemplateResponse(request, "move_item.html", {
         "item_path": item_path,
         "item_name": os.path.basename(item_path),
-        "items": all_items,
     })
 
 
