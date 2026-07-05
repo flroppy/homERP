@@ -146,10 +146,11 @@ def create_item(
     name: Annotated[str, Field(description="Display name for the new item. Must be unique within its parent.")],
     parent_path: Path = "",
     content: Annotated[str, Field(description="Optional markdown description.")] = "",
+    fields: Annotated[dict[str, str], Field(description="Optional custom key-value metadata, e.g. {\"category\": \"Board Games\"}.")] = {},
 ) -> str:
     """Create a new item under parent_path. Returns the new item's id and path."""
     with _client() as c:
-        r = c.post(f"/api/items/{parent_path}", json={"name": name, "content": content})
+        r = c.post(f"/api/items/{parent_path}", json={"name": name, "content": content, "fields": fields})
         r.raise_for_status()
         return _fmt(r.json())
 
@@ -159,13 +160,16 @@ def update_item(
     path: Path,
     name: Annotated[str, Field(description="New name. Omit or pass '' to keep the current name.")] = "",
     content: Annotated[str, Field(description="New markdown content. Omit or pass '' to keep the current content.")] = "",
+    fields: Annotated[dict[str, str] | None, Field(description="Custom fields to set or update. Merged with existing fields — omit to leave fields untouched, pass {} to clear all custom fields.")] = None,
 ) -> str:
-    """Rename an item and/or replace its markdown content. Returns the (possibly new) path."""
+    """Rename an item, update its markdown content, and/or set custom fields. Returns the (possibly new) path."""
     body = {}
     if name:
         body["name"] = name
     if content:
         body["content"] = content
+    if fields is not None:
+        body["fields"] = fields
     with _client() as c:
         r = c.patch(f"/api/items/{path}", json=body)
         r.raise_for_status()
