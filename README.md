@@ -124,3 +124,6 @@ Write a script to bulk edit grocy
 - **User-defined tags / key-value pairs** — allow arbitrary metadata on items beyond just `id`; useful for aggregating info (e.g. value, size, category)
 - **PDF upload via MCP** — `write_attachment` currently supports `.txt`/`.md` only; add base64-encoded PDF upload support
 
+### Refactors
+- **Deduplicate GUI/API logic** — `routers/items.py` and `routers/api.py` both implement create, update, delete, move, and attachment operations. Extract shared logic (e.g. write index.md, handle photo, promote children on delete) into `storage.py` so both routers call helpers instead of duplicating the implementation.
+
