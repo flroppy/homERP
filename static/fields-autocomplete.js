@@ -65,9 +65,8 @@ function _acDismiss() {
     _acTarget = null;
 }
 
-document.addEventListener('click',     e  => { if (e.target !== _acTarget) _acDismiss(); });
-document.addEventListener('touchmove', _acDismiss, { passive: true });
-document.addEventListener('scroll',    _acDismiss, { passive: true, capture: true });
+document.addEventListener('click',  e  => { if (e.target !== _acTarget) _acDismiss(); });
+document.addEventListener('scroll', _acDismiss, { passive: true, capture: true });
 
 // ── Fields editor ─────────────────────────────────────────────────────────────
 
