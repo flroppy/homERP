@@ -198,6 +198,8 @@ async def create_item(body: CreateItem, path: str = ""):
         raise HTTPException(status_code=404, detail="Parent not found")
     try:
         item_id, item_path = storage.create_item(parent, name, body.content, body.fields)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except FileExistsError:
         raise HTTPException(status_code=409, detail=f"'{name}' already exists here")
     log.info("API created item %s (id=%s) under %r", name, item_id, path or "/")
@@ -212,6 +214,8 @@ async def update_item(body: UpdateItem, path: str = ""):
         raise HTTPException(status_code=404, detail="Item not found")
     try:
         new_item_path = storage.update_item(item_path, body.name, body.content, body.fields)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except FileExistsError as e:
         raise HTTPException(status_code=409, detail=str(e))
     new_path = str(new_item_path.relative_to(storage.HOUSE_ROOT))

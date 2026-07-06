@@ -20,6 +20,16 @@ IGNORED_ATTACHMENTS = ['index.md', 'photo.jpg', 'thumbnail.jpg']
 UUID_LENGTH = 8
 SYSTEM_KEYS = frozenset({'id', 'name', 'path', 'content', 'html_content', 'photo_path'})
 
+_FORBIDDEN_NAME_RE = re.compile(r'[/?#\x00-\x1f]')
+
+
+def validate_item_name(name: str):
+    """Raise ValueError if name contains characters that break URL routing or the filesystem."""
+    if not name or name in ('.', '..'):
+        raise ValueError("Name cannot be empty")
+    if _FORBIDDEN_NAME_RE.search(name):
+        raise ValueError("Name may not contain /, ?, or # (reserved URL/path characters)")
+
 _hierarchy_cache: tuple | None = None
 
 
@@ -192,7 +202,8 @@ def write_item_index(item_path: Path, item_id: str, fields: dict, content: str):
 
 def create_item(parent: Path, name: str, content: str = "", fields: dict | None = None) -> tuple[str, Path]:
     """Create a new item directory and index.md. Returns (item_id, item_path).
-    Raises FileExistsError if name already exists under parent."""
+    Raises ValueError for invalid names, FileExistsError if already exists."""
+    validate_item_name(name)
     item_path = parent / name
     if item_path.exists():
         raise FileExistsError(f"'{name}' already exists here")
@@ -232,6 +243,7 @@ def update_item(item_path: Path, name: str | None = None, content: str | None = 
     new_path = item_path
     if name and name.strip() != item_path.name:
         new_name = name.strip()
+        validate_item_name(new_name)
         dest = item_path.parent / new_name
         if dest.exists():
             raise FileExistsError(f"'{new_name}' already exists here")

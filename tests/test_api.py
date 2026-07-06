@@ -34,6 +34,12 @@ def test_create_item_conflict(client):
     assert r.status_code == 409
 
 
+def test_create_item_invalid_name(client):
+    for bad in ['a/b', 'a?b', 'a#b']:
+        r = client.post('/api/items/', json={'name': bad})
+        assert r.status_code == 400, f"expected 400 for {bad!r}"
+
+
 def test_create_item_missing_parent(client):
     r = client.post('/api/items/nonexistent', json={'name': 'Child'})
     assert r.status_code == 404

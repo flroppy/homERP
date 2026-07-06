@@ -110,6 +110,8 @@ async def save_item(
 
     try:
         new_item_path = storage.update_item(item_path, name, content, fields, replace_fields=True)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except FileExistsError:
         raise HTTPException(status_code=409, detail=f"An item named '{name}' already exists here")
 
@@ -177,8 +179,6 @@ async def create_item(
     folder_name = name.strip()
     if not folder_name:
         raise HTTPException(status_code=400, detail="Name required")
-    if '?' in folder_name:
-        raise HTTPException(status_code=400, detail="? not allowed in name")
 
     fields = {}
     for k, v in zip(field_key, field_value):
@@ -189,6 +189,8 @@ async def create_item(
     parent = storage.HOUSE_ROOT / path
     try:
         item_id, item_path = storage.create_item(parent, folder_name, content, fields)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except FileExistsError:
         raise HTTPException(status_code=409, detail=f"'{folder_name}' already exists here")
 
