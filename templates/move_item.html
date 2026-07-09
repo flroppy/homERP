@@ -52,13 +52,19 @@
     }
 
     input.addEventListener('ac-select', () => selectPath(input.value));
-    input.addEventListener('input',     () => selectPath(''));
 
-    // Auto-submit on exact 8-char ID entry (existing behaviour)
+    // On manual input: if it looks like a scanned 8-char ID, enable the button so
+    // hardware scanners (which type + press Enter) still work without auto-submitting
+    // on accidentally-typed 8-char location names.
     input.addEventListener('input', function () {
-        if (/^[A-Za-z0-9_-]{8}$/.test(this.value)) {
-            document.getElementById('by-id-value').value = this.value;
-            document.getElementById('move-form').submit();
+        const v = this.value.trim();
+        if (/^[A-Za-z0-9_-]{8}$/.test(v)) {
+            hidden.value = '';
+            document.getElementById('by-id-value').value = v;
+            hint.textContent = 'ID: ' + v;
+            btn.disabled = false;
+        } else {
+            selectPath('');
         }
     });
     </script>
