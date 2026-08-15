@@ -31,15 +31,12 @@ All runtime config lives in `config.py` as a `pydantic-settings` `Settings` clas
 - `DATA_DIR` — path to item storage directory (default: `House`)
 - `BARCODE_PRINTER_ADDRESS` — printer address e.g. `tcp://192.168.1.x`; leave empty to disable printing
 - `BARCODE_PRINTER_MODEL`, `BARCODE_PRINTER_TAPE`, `BARCODE_RENDERED_HEIGHT` — label maker settings
-- `GIT_SSH_URL`, `GIT_AUTHOR` — git backup settings (not yet implemented)
-- `GROCY_API_KEY` — Grocy integration key
+- `GIT_REMOTE_URL`, `GIT_USERNAME`, `GIT_TOKEN`, `GIT_AUTHOR` — git backup settings (implemented via `git_backup.py`/dulwich)
+- `API_KEY` — API key for the `routers/api.py` endpoints
 
 The printer backend is initialized lazily (only on first print), so the app starts cleanly with no printer configured.
 
-## Desired Refactors
-- `main.py` is a monolith and should be split into focused modules, e.g.:
-  - `routers/items.py` — browse/create/edit/delete/move routes
-  - `routers/barcodes.py` — barcode and printing routes
-  - `storage.py` — file I/O helpers (`read_index_file`, `list_directory_items`, etc.)
-  - `barcode.py` — barcode generation logic
-  - `config.py` is already extracted as the first step of this split
+`GROCY_API_KEY` is read directly via `os.getenv` in `import_grocy.py` and is not part of `config.py`'s `Settings`.
+
+## Planned Work
+Tracked as [Gitea issues](https://github.com/flroppy/homERP/issues) — that is the source of truth for planned features and refactors, not this file.

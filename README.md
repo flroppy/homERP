@@ -89,16 +89,6 @@ Items may have an arbitrary amount of attachments that will be available for dow
 
 # Random Notes I took for possible improvements
 
-Consider having a "value" rating to allow sorting out low value items. A loose volume/size could be useful as a value/m^3 metric
-
-Ideas for automation:
-
-- AI image to name/description
-- could also get idea of size from photo
-- AI recommendation for storage ldeleted
-- Show use random items and ask if they spark joy
-- somehow suggest items to be deleted
-
 Setup workflow:
 
 * Go to item to create in to with label, browsing, or search
@@ -108,10 +98,6 @@ Setup workflow:
   * optional photo
 * Save/print label and provide options for where to land after
 
-Could backup to git (allow easy changes by user externally) dulwich
-
-Write a script to bulk edit grocy
-
 ## Name Ideas
 * Binli?
 * Mintri?
@@ -119,11 +105,5 @@ Write a script to bulk edit grocy
 
 ## TODOs
 
-### Features
-- **Rename the project** — "homERP" is a placeholder; see Name Ideas below
-- **User-defined tags / key-value pairs** — allow arbitrary metadata on items beyond just `id`; useful for aggregating info (e.g. value, size, category)
-- **PDF upload via MCP** — `write_attachment` currently supports `.txt`/`.md` only; add base64-encoded PDF upload support
-
-### Refactors
-- **Deduplicate GUI/API logic** — `routers/items.py` and `routers/api.py` both implement create, update, delete, move, and attachment operations. Extract shared logic (e.g. write index.md, handle photo, promote children on delete) into `storage.py` so both routers call helpers instead of duplicating the implementation.
+Tracked as [Gitea issues](https://github.com/flroppy/homERP/issues) — that is the source of truth for planned work, not this file.
 
