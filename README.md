@@ -1,5 +1,8 @@
 # homERP
 
+[![Tests](https://github.com/flroppy/homERP/actions/workflows/tests.yml/badge.svg)](https://github.com/flroppy/homERP/actions)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
+
 This is a home ERP system for tracking storage of evergreen items in the household. The goal is to give every item a place, so every item can be in its place.
 
 ## Setup
