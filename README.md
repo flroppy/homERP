@@ -55,9 +55,8 @@ cp .env.example .env
 docker-compose up -d
 ```
 
-For reverse proxy labels (Traefik) or a homepage dashboard entry, copy
-`docker-compose.override.yml.example` to `docker-compose.override.yml` (gitignored) and
-edit it — Compose merges it in automatically.
+For deployment-specific tweaks (reverse proxy labels, custom networks, etc.), add a
+`docker-compose.override.yml` (gitignored) — Compose merges it in automatically.
 
 ## Goals
 These should always be thought about when implementing something
