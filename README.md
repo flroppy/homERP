@@ -90,3 +90,8 @@ All items *may* have a `photo.jpg` that will be used for thumbnails and will dis
 
 Items may have an arbitrary amount of attachments that will be available for download on the items page.
 
+## License
+
+[Unlicense](LICENSE) — public domain. The bundled `src/roboto.ttf` font is Apache License 2.0,
+see [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+
