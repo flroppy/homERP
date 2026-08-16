@@ -6,7 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run app: `uvicorn main:app --host "0.0.0.0" --port 80 --reload --app-dir src`
 - Docker: `docker-compose up -d`
 - Run tests: `env/bin/pytest tests/ -v`
-- Install pre-commit hook: `ln -sf ../../hooks/pre-commit .git/hooks/pre-commit`
 
 ## Code Style Guidelines
 - Imports: Standard library first, third-party next, function imports last
