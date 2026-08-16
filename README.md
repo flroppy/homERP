@@ -1,6 +1,6 @@
 # homERP
 
-This is a home ERP system for tracking storage of evergreen items in the household. Purpose is to give every item a place so every item can be in it's place.
+This is a home ERP system for tracking storage of evergreen items in the household. The goal is to give every item a place, so every item can be in its place.
 
 ## Setup
 
@@ -73,14 +73,14 @@ These should always be thought about when implementing something
 
 ## Parts
 
-Every part is a folder with metadata (files) and other parts (folder) rendered with index.md for metadata
+Every part is a folder with metadata (files) and other parts (folders) rendered with index.md for metadata
 The index.md is rendered on the parts page and may have any information desired in it for reference.
 
 ## ID
 
 ID is a base 64, 8 character long code. This allows for `281474976710656` unique items.
 
-Since folders names are just the non-unique name this means there could be conflicts.
+Since folder names are just the non-unique name, this means there could be conflicts.
 
 ## Photo
 
