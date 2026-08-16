@@ -16,6 +16,19 @@ cp .env.example .env
 uvicorn main:app --host 0.0.0.0 --port 80 --reload --app-dir src
 ```
 
+### Try it with example data
+
+The `example/` folder has a small sample inventory (nested items, custom fields, markdown
+content) so you can poke around without setting up your own data first:
+
+```bash
+DATA_DIR=example uvicorn main:app --app-dir src --reload
+```
+
+If you're hosting this publicly as a demo, point `DATA_DIR` at a scratch copy rather than
+`example/` directly — the app allows editing/deleting through the UI, so anyone visiting a
+live demo could modify or wipe it.
+
 ### Configuration
 
 All settings are environment variables, read from `.env`. The minimum you need to change is `DATA_DIR` — everything else has working defaults.
