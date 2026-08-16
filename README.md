@@ -87,23 +87,3 @@ All items *may* have a `photo.jpg` that will be used for thumbnails and will dis
 
 Items may have an arbitrary amount of attachments that will be available for download on the items page.
 
-# Random Notes I took for possible improvements
-
-Setup workflow:
-
-* Go to item to create in to with label, browsing, or search
-* Click create item and enter:
-  * item name
-  * optional description
-  * optional photo
-* Save/print label and provide options for where to land after
-
-## Name Ideas
-* Binli?
-* Mintri?
-* Try to work a TLD in: .store, .house, .storage, .haus
-
-## TODOs
-
-Tracked as [Gitea issues](https://github.com/flroppy/homERP/issues) — that is the source of truth for planned work, not this file.
-
