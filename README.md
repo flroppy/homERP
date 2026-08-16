@@ -21,13 +21,13 @@ All settings are environment variables, read from `.env`. The minimum you need t
 |---|---|---|
 | `DATA_DIR` | `House` | Path to the directory where item data is stored |
 | `BARCODE_PRINTER_MODEL` | `QL-810W` | Brother QL printer model |
-| `BARCODE_PRINTER_ADDRESS` | `tcp://10.20.30.201` | Printer address; leave empty to disable printing |
+| `BARCODE_PRINTER_ADDRESS` | _(empty)_ | Printer address e.g. `tcp://192.168.1.50`; leave empty to disable printing |
 | `BARCODE_PRINTER_TAPE` | `12` | Tape width in mm |
 | `BARCODE_RENDERED_HEIGHT` | `106` | Barcode image height in pixels (matches tape width) |
 | `GIT_REMOTE_URL` | _(empty)_ | Remote git URL for auto-backup; leave empty to disable |
 | `GIT_USERNAME` | _(empty)_ | Git username for HTTPS auth |
 | `GIT_TOKEN` | _(empty)_ | Personal access token for HTTPS auth |
-| `GIT_AUTHOR` | `homERP <homERP@s-d.space>` | Git author for backup commits |
+| `GIT_AUTHOR` | `homERP <homerp@example.com>` | Git author for backup commits |
 
 ### Git backup
 

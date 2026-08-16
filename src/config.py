@@ -6,13 +6,13 @@ class Settings(BaseSettings):
 
     data_dir: str = "House"
     barcode_printer_model: str = "QL-810W"
-    barcode_printer_address: str = "tcp://10.20.30.201"
+    barcode_printer_address: str = ""
     barcode_printer_tape: str = "12"
     barcode_rendered_height: int = 106
     git_remote_url: str = ""
     git_username: str = ""
     git_token: str = ""
-    git_author: str = "homERP <homERP@s-d.space>"
+    git_author: str = "homERP <homerp@example.com>"
     api_key: str = ""
 
 
