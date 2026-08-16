@@ -16,7 +16,7 @@ import git_backup
 from config import settings
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 log = logging.getLogger(__name__)
 
 

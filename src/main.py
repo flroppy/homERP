@@ -1,6 +1,7 @@
 import logging
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import git_backup
@@ -15,7 +16,7 @@ async def lifespan(app):
     yield
 
 app = FastAPI(title="homERP", docs_url="/api/", redoc_url=None, lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(items.router, include_in_schema=False)
 app.include_router(barcodes.router, include_in_schema=False)
 app.include_router(api.router)

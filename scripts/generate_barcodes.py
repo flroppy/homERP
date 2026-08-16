@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from pylibdmtx import pylibdmtx
 
@@ -39,7 +40,8 @@ def create_barcode_image(codes, labels, output_image_file):
 
     # Set up font (use default font or specify path to a font file)
     try:
-        font = ImageFont.truetype("roboto.ttf", font_size)
+        font_path = str(Path(__file__).parent.parent / "src" / "roboto.ttf")
+        font = ImageFont.truetype(font_path, font_size)
     except IOError:
         font = ImageFont.load_default()
 

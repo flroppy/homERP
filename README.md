@@ -10,7 +10,7 @@ This is a home ERP system for tracking storage of evergreen items in the househo
 pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your settings
-uvicorn main:app --host 0.0.0.0 --port 80 --reload
+uvicorn main:app --host 0.0.0.0 --port 80 --reload --app-dir src
 ```
 
 ### Configuration
