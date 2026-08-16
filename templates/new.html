@@ -20,6 +20,7 @@
 
 {% block content %}
 <section>
+    <a href="/browse/{{ parent_path }}">← Cancel</a>
     <form action="/new/{{ parent_path }}" method="post" enctype="multipart/form-data">
         <label for="item-name">Name</label>
         <input type="text" id="item-name" name="name" required autofocus autocomplete="off"
