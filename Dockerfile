@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source (docker-compose overlays this with a live bind mount for dev)
 COPY . /app
 
-# Make port 5000 available to the world outside this container (optional, adjust if needed)
+# Make port 8000 available to the world outside this container (optional, adjust if needed)
 EXPOSE 8000
 
 # Define environment variable for running the app

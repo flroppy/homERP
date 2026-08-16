@@ -1,33 +1,11 @@
 services:
   homerp:
-    container_name: ${NAME}
     build:
       context: .  # Build the image from the current directory
     volumes:
       - .:/app  # Mount the current directory to the container's /app directory
     #ports:
-      #- "5000:8000"  # Map port 5000 on the host to port 5000 in the container
+      #- "8000:8000"  # Map port 8000 on the host to port 8000 in the container
     environment:
       - PYTHONUNBUFFERED=1  # Ensure logs are printed directly to the console (useful for debugging)
-    #network_mode: host
-    #command: python app.py  # Command to run the application
     restart: unless-stopped
-    networks:
-      - proxy
-      - internal
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.${NAME}.loadbalancer.server.port=8000"
-      - "traefik.http.routers.${NAME}.rule=Host(`${URL}`)"
-      - "traefik.http.routers.${NAME}.entrypoints=web"
-      - "traefik.http.routers.${NAME}.service=${NAME}"
-      - "homepage.group=Home Management"
-      - "homepage.name=${NAME}"
-      - "homepage.icon=mdi-folder-home"
-      - "homepage.href=http://${URL}"
-
-networks:
-  proxy:
-    external: true
-  internal:
-    driver: bridge

@@ -4,6 +4,7 @@ House/
 __pycache__/
 env/
 .env
+docker-compose.override.yml
 house_bak/
 barcode_output.png
 equipment_output/
