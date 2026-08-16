@@ -1,0 +1,17 @@
+.git/
+_site/
+house/
+House/
+house_bak/
+__pycache__/
+env/
+.env
+docker-compose.override.yml
+barcode_output.png
+equipment_output/
+barcodes.csv
+id_rsa
+id_rsa.pub
+ssh_config
+.pytest_cache/
+tests/
