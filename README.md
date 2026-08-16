@@ -95,6 +95,5 @@ Items may have an arbitrary amount of attachments that will be available for dow
 
 ## License
 
-[Unlicense](LICENSE) — public domain. The bundled `src/roboto.ttf` font is Apache License 2.0,
-see [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+[Unlicense](LICENSE) — public domain.
 

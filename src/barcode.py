@@ -1,6 +1,5 @@
 import logging
 from io import BytesIO
-from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from pylibdmtx.pylibdmtx import encode
 from brother_ql.labels import ALL_LABELS, Color
@@ -36,9 +35,8 @@ def generate_barcode(item_id):
 def generate_barcode_with_label(item_id, item_name, due_date: str = None):
     barcode_img = generate_barcode(item_id)
 
-    font_path = str(Path(__file__).parent / "roboto.ttf")
-    font = ImageFont.truetype(font_path, size=settings.barcode_rendered_height // 2)
-    font_dd = ImageFont.truetype(font_path, size=settings.barcode_rendered_height // 3)
+    font = ImageFont.load_default(size=settings.barcode_rendered_height // 2)
+    font_dd = ImageFont.load_default(size=settings.barcode_rendered_height // 3)
 
     scale_factor = settings.barcode_rendered_height / barcode_img.height
     barcode_img = barcode_img.resize(
