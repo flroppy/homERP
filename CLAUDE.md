@@ -37,7 +37,7 @@ All runtime config lives in `src/config.py` as a `pydantic-settings` `Settings` 
 
 The printer backend is initialized lazily (only on first print), so the app starts cleanly with no printer configured.
 
-`GROCY_API_KEY` is read directly via `os.getenv` in `scripts/import_grocy.py` and is not part of `config.py`'s `Settings`.
+`GROCY_API_KEY` and `GROCY_BASE_URL` are read directly via `os.getenv` in `scripts/import_grocy.py` and are not part of `config.py`'s `Settings`.
 
 ## Planned Work
 Tracked as [Gitea issues](https://github.com/flroppy/homERP/issues) — that is the source of truth for planned features and refactors, not this file.

@@ -6,10 +6,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configuration - replace these with your Grocy instance details
-GROCY_API_URL = "http://grocy.s-d.space/api/objects/equipment"
-EQUIPMENT_MANUALS_API_URL = "http://grocy.s-d.space/api/files/equipmentmanuals"
-USERFILE_API_URL = "https://grocy.s-d.space/files/userfiles"
+# Configuration - set GROCY_BASE_URL and GROCY_API_KEY to your Grocy instance details
+GROCY_BASE_URL = os.getenv('GROCY_BASE_URL', 'http://grocy.example.com')
+GROCY_API_URL = f"{GROCY_BASE_URL}/api/objects/equipment"
+EQUIPMENT_MANUALS_API_URL = f"{GROCY_BASE_URL}/api/files/equipmentmanuals"
+USERFILE_API_URL = f"{GROCY_BASE_URL}/files/userfiles"
 API_KEY = os.getenv('GROCY_API_KEY')
 OUTPUT_DIR = "equipment_output"  # Directory where folders will be saved
 UUID_LENGTH = 8
