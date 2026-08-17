@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 import urllib.parse
 import shutil
 import markdown
@@ -68,6 +69,13 @@ async def all_items(request: Request):
         "items": all_items_hierarchy,
         "total_items": total,
     })
+
+
+@router.get("/spark-joy", response_class=HTMLResponse)
+async def spark_joy(request: Request):
+    items, _ = storage.list_all_items(storage.HOUSE_ROOT)
+    item = random.choice(items) if items else None
+    return templates.TemplateResponse(request, "spark_joy.html", {"item": item})
 
 
 @router.get("/edit/{path:path}", response_class=HTMLResponse)
@@ -215,7 +223,7 @@ async def create_item(
 
 
 @router.post("/delete/{parent_path:path}")
-async def delete_item(parent_path: str):
+async def delete_item(parent_path: str, redirect_to: str = Form(default="")):
     item_to_delete_path = storage.HOUSE_ROOT / parent_path
 
     if item_to_delete_path == storage.HOUSE_ROOT:
@@ -228,7 +236,10 @@ async def delete_item(parent_path: str):
     storage.delete_item(item_to_delete_path)
     log.info("Deleted item %s", parent_path)
     git_backup.git_auto_backup("delete", os.path.basename(parent_path), parent_path, storage.HOUSE_ROOT)
-    return RedirectResponse(url=f"/browse/{parent_item_path.relative_to(storage.HOUSE_ROOT)}", status_code=303)
+    target = f"/browse/{parent_item_path.relative_to(storage.HOUSE_ROOT)}"
+    if redirect_to.startswith("/") and not redirect_to.startswith("//"):
+        target = redirect_to
+    return RedirectResponse(url=target, status_code=303)
 
 
 @router.post("/upload/{path:path}")

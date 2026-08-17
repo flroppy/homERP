@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Spark Joy - House Inventory{% endblock %}
+
+{% block header %}Spark Joy{% endblock %}
+
+{% block content %}
+{% if item %}
+    <section>
+        <div class="item-header">
+            <h1>{{ item.name }}</h1>
+            {% if item.photo_path %}
+                <img src="{{ item.photo_path }}" alt="Photo of {{ item.name }}">
+            {% endif %}
+        </div>
+
+        {{ item.html_content | safe }}
+
+        <p><a href="/browse/{{ item.path }}">View full item</a></p>
+
+        <div class="item-actions">
+            <a role="button" href="/spark-joy">💚 Keep it</a>
+            <button aria-label="Doesn't spark joy" class="danger" onclick="document.getElementById('delete-dialog').showModal()">🗑️ Doesn't spark joy</button>
+        </div>
+
+        <dialog id="delete-dialog">
+            <h2>Delete {{ item.name }}?</h2>
+            <p>All sub-items will be moved to the parent.</p>
+            <form action="/delete/{{ item.path }}" method="POST">
+                <input type="hidden" name="redirect_to" value="/spark-joy">
+                <button type="submit" class="danger">Delete</button>
+            </form>
+            <button autofocus onclick="document.getElementById('delete-dialog').close()">Cancel</button>
+        </dialog>
+    </section>
+{% else %}
+    <section>
+        <p>No items yet — nothing to review.</p>
+    </section>
+{% endif %}
+{% endblock %}
