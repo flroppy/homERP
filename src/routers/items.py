@@ -236,6 +236,10 @@ async def upload_file(path: str, file: UploadFile = File(...)):
     item_path = storage.HOUSE_ROOT / path
     if not item_path.exists():
         raise HTTPException(status_code=404, detail="Item not found")
+    try:
+        storage.validate_item_name(file.filename)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     with open(item_path / file.filename, "wb") as f:
         shutil.copyfileobj(file.file, f)
     git_backup.git_auto_backup("upload", os.path.basename(path), path, storage.HOUSE_ROOT)
@@ -294,6 +298,10 @@ async def rename_attachment(path: str, new_name: str = Form(...)):
     new_name = new_name.strip()
     if not new_name:
         raise HTTPException(status_code=400, detail="Name cannot be empty")
+    try:
+        storage.validate_item_name(new_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     original_ext = file_path.suffix
     if original_ext and new_name.endswith(original_ext):
         new_stem = new_name[:-len(original_ext)]
@@ -396,6 +404,8 @@ async def move_item(request: Request, item_path: str, destination: str = Form(de
         raise HTTPException(status_code=404, detail="Destination not found")
     if not destination_path_obj.is_dir():
         raise HTTPException(status_code=400, detail="Destination must be a directory")
+    if not destination_path_obj.resolve().is_relative_to(storage.HOUSE_ROOT.resolve()):
+        raise HTTPException(status_code=403, detail="Destination is outside the data directory")
 
     storage.move_item(item_path_obj, destination_path_obj)
     log.info("Moved %s to %s", item_path, destination)

@@ -177,6 +177,12 @@ def test_by_id_missing_returns_404(client):
 
 # --- Attachments ---
 
+def test_upload_path_traversal_blocked(client, item, data_dir):
+    r = client.post(f'/upload/{item}', files={'file': ('../evil.txt', b'x', 'text/plain')})
+    assert r.status_code == 400
+    assert not (data_dir / 'evil.txt').exists()
+
+
 def test_upload_and_download_attachment(client, item, data_dir):
     content = b'hello world'
     r = client.post(f'/upload/{item}', files={'file': ('note.txt', content, 'text/plain')})
@@ -248,6 +254,14 @@ def test_rename_attachment_conflict(client, item, data_dir):
     assert (data_dir / item / 'a.txt').exists()
 
 
+def test_rename_attachment_path_traversal_blocked(client, item, data_dir):
+    client.post(f'/upload/{item}', files={'file': ('doc.txt', b'x', 'text/plain')})
+    r = client.post(f'/rename-attachment/{item}/doc.txt', data={'new_name': '../evil.txt'})
+    assert r.status_code == 400
+    assert (data_dir / item / 'doc.txt').exists()
+    assert not (data_dir / 'evil.txt').exists()
+
+
 # --- Move ---
 
 def test_move_item(client, data_dir):
@@ -260,6 +274,14 @@ def test_move_item(client, data_dir):
     assert r.status_code == 200
     assert (data_dir / 'Container' / 'Widget').is_dir()
     assert not (data_dir / 'Widget').exists()
+
+
+def test_move_item_path_traversal_blocked(client, data_dir):
+    client.post('/new/', data={'name': 'Escapee', 'content': '', 'label': 'no'},
+                files={'photo': ('', b'', 'application/octet-stream')})
+    r = client.post('/move/Escapee', data={'destination': '..', 'by_id': ''})
+    assert r.status_code == 403
+    assert (data_dir / 'Escapee').is_dir()
 
 
 # --- Add (session log form) ---

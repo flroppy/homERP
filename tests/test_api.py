@@ -117,6 +117,13 @@ def test_move_item_by_id(client, data_dir):
     assert (data_dir / 'Dest' / 'Mover').is_dir()
 
 
+def test_move_item_path_traversal_blocked(client, data_dir):
+    client.post('/api/items/', json={'name': 'Escapee'})
+    r = client.post('/api/items/Escapee/move', json={'destination': '..'})
+    assert r.status_code == 403
+    assert (data_dir / 'Escapee').is_dir()
+
+
 # --- Custom fields ---
 
 def test_create_item_with_fields(client, data_dir):
@@ -298,6 +305,13 @@ def test_upload_attachment(client, item, data_dir):
     assert body['name'] == 'note.txt'
     assert body['size'] == 5
     assert (data_dir / item / 'note.txt').exists()
+
+
+def test_upload_attachment_path_traversal_blocked(client, item, data_dir):
+    r = client.post(f'/api/items/{item}/attachments',
+                    files={'file': ('../evil.txt', b'x', 'text/plain')})
+    assert r.status_code == 400
+    assert not (data_dir / 'evil.txt').exists()
 
 
 def test_download_attachment(client, item, data_dir):

@@ -130,6 +130,8 @@ async def move_item(body: MoveItem, path: str):
             raise HTTPException(status_code=404, detail="Destination not found")
     if not dest_path.is_dir():
         raise HTTPException(status_code=400, detail="Destination must be a directory")
+    if not dest_path.resolve().is_relative_to(storage.HOUSE_ROOT.resolve()):
+        raise HTTPException(status_code=403, detail="Destination is outside the data directory")
     new_path = storage.move_item(item_path, dest_path)
     log.info("API moved %s to %s", path, body.destination)
     git_backup.git_auto_backup("move", item_path.name, body.destination, storage.HOUSE_ROOT)
@@ -141,6 +143,10 @@ async def upload_attachment(path: str, file: UploadFile = File(...)):
     item_path = storage.HOUSE_ROOT / path
     if not item_path.exists():
         raise HTTPException(status_code=404, detail="Item not found")
+    try:
+        storage.validate_item_name(file.filename)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     dest = item_path / file.filename
     if not str(dest.resolve()).startswith(str(storage.HOUSE_ROOT.resolve())):
         raise HTTPException(status_code=403, detail="Invalid path")
