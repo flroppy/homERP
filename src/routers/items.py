@@ -246,7 +246,7 @@ async def upload_file(path: str, file: UploadFile = File(...)):
     return RedirectResponse(url=f"/browse/{path}", status_code=303)
 
 
-@router.get("/delete-attachment/{path:path}")
+@router.post("/delete-attachment/{path:path}")
 async def delete_attachment(path: str):
     file_path = storage.HOUSE_ROOT / path
     if not file_path.exists() or not file_path.is_file():

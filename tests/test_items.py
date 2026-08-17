@@ -196,7 +196,7 @@ def test_upload_and_download_attachment(client, item, data_dir):
 
 def test_delete_attachment(client, item, data_dir):
     client.post(f'/upload/{item}', files={'file': ('note.txt', b'x', 'text/plain')})
-    r = client.get(f'/delete-attachment/{item}/note.txt')
+    r = client.post(f'/delete-attachment/{item}/note.txt')
     assert r.status_code == 200
     assert not (data_dir / item / 'note.txt').exists()
 

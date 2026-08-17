@@ -135,8 +135,10 @@
 
                 <dialog id="dialog-delete-{{loop.index}}">
                     <h3>Delete {{ attachment.name }}?</h3>
-                    <a href="/delete-attachment/{{ attachment.path }}">Delete</a>
-                    <button onclick="this.closest('dialog').close()">Cancel</button>
+                    <form action="/delete-attachment/{{ attachment.path }}" method="post">
+                        <button type="submit" class="danger">Delete</button>
+                        <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+                    </form>
                 </dialog>
             </li>
             {% endfor %}

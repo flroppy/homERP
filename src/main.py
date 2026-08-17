@@ -12,9 +12,6 @@ from routers import items, barcodes, api
 
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO").upper())
 
-# The only mutating route that isn't a POST/PUT/PATCH/DELETE.
-_DEMO_BLOCKED_GET_PREFIX = "/delete-attachment/"
-
 
 @asynccontextmanager
 async def lifespan(app):
@@ -26,13 +23,8 @@ app = FastAPI(title="homERP", docs_url="/api/", redoc_url=None, lifespan=lifespa
 
 @app.middleware("http")
 async def demo_read_only_guard(request: Request, call_next):
-    if settings.demo_read_only:
-        is_write = request.method in ("POST", "PUT", "PATCH", "DELETE")
-        is_get_delete = (
-            request.method == "GET" and request.url.path.startswith(_DEMO_BLOCKED_GET_PREFIX)
-        )
-        if is_write or is_get_delete:
-            return JSONResponse({"detail": "Demo mode is read-only."}, status_code=403)
+    if settings.demo_read_only and request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        return JSONResponse({"detail": "Demo mode is read-only."}, status_code=403)
     return await call_next(request)
 
 

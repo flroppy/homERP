@@ -11,10 +11,10 @@ def test_demo_read_only_blocks_api_create(client, monkeypatch):
     assert r.status_code == 403
 
 
-def test_demo_read_only_blocks_delete_attachment_get(client, item, data_dir, monkeypatch):
+def test_demo_read_only_blocks_delete_attachment(client, item, data_dir, monkeypatch):
     client.post(f'/upload/{item}', files={'file': ('note.txt', b'x', 'text/plain')})
     monkeypatch.setattr('config.settings.demo_read_only', True)
-    r = client.get(f'/delete-attachment/{item}/note.txt')
+    r = client.post(f'/delete-attachment/{item}/note.txt')
     assert r.status_code == 403
     assert (data_dir / item / 'note.txt').exists()
 
