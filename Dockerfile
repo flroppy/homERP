@@ -21,4 +21,4 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 
 # Run the application
-CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--app-dir", "src"]
+CMD ["uvicorn", "src.main:app", "--reload", "--host", "0.0.0.0"]
