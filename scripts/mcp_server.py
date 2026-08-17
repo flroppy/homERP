@@ -15,7 +15,8 @@ from pydantic import Field
 from mcp.server.fastmcp import FastMCP
 
 READABLE_EXTENSIONS = {".txt", ".md", ".pdf"}
-WRITABLE_EXTENSIONS = {".txt", ".md"}
+WRITABLE_EXTENSIONS = {".txt", ".md", ".pdf"}
+WRITE_MIME_TYPES = {".txt": "text/plain", ".md": "text/markdown", ".pdf": "application/pdf"}
 
 BASE_URL = os.environ.get("HOMERP_BASE_URL", "http://localhost:80").rstrip("/")
 API_KEY = os.environ.get("HOMERP_API_KEY", "")
@@ -240,17 +241,18 @@ def delete_attachment(
 @mcp.tool(name="homerp write attachment")
 def write_attachment(
     path: Path,
-    filename: Annotated[str, Field(description="Filename including extension. Supported: .txt, .md. Creates or overwrites.")],
-    content: Annotated[str, Field(description="Text content to write.")],
+    filename: Annotated[str, Field(description="Filename including extension. Supported: .txt, .md, .pdf. Creates or overwrites.")],
+    content: Annotated[str, Field(description="Text content for .txt/.md files. For .pdf, base64-encoded bytes (MCP parameters are JSON so binary must be base64-encoded).")],
 ) -> str:
-    """Write a .txt or .md file attachment to an item, creating or overwriting it."""
+    """Write a .txt, .md, or .pdf file attachment to an item, creating or overwriting it."""
     ext = os.path.splitext(filename)[1].lower()
     if ext not in WRITABLE_EXTENSIONS:
         return f"Unsupported file type '{ext}'. Supported: {', '.join(sorted(WRITABLE_EXTENSIONS))}"
+    data = base64.b64decode(content) if ext == ".pdf" else content.encode()
     with _client() as c:
         r = c.post(
             f"/api/items/{path}/attachments",
-            files={"file": (filename, content.encode(), "text/plain")},
+            files={"file": (filename, data, WRITE_MIME_TYPES[ext])},
         )
         r.raise_for_status()
         return _fmt(r.json())

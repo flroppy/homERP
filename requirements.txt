@@ -2,7 +2,7 @@ fastapi
 pydantic-settings
 setuptools
 pytest
-httpx2
+httpx
 pyyaml
 uuid
 markdown
@@ -16,4 +16,4 @@ python-multipart
 python-Levenshtein
 brother-ql
 dulwich
-mcp
+mcp>=1.9,<2
