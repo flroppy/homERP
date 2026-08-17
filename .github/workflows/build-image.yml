@@ -1,0 +1,20 @@
+name: Build and push image
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to Gitea container registry
+        run: echo "${{ secrets.GITEA_TOKEN }}" | docker login git.mir.meta -u floppy --password-stdin
+      - name: Build image
+        run: docker build -t ghcr.io/flroppy/homerp:latest .
+      - name: Push image
+        run: docker push ghcr.io/flroppy/homerp:latest
