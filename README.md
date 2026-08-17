@@ -93,14 +93,14 @@ These should always be thought about when implementing something
   * All data stored should be extremely portable
   * This is currently implemented by having everything stored as a raw folder/file on the file system that can easily be manipulated by the user or backed up
 
-## Parts
+## Items
 
-Every part is a folder with metadata (files) and other parts (folders) rendered with index.md for metadata
-The index.md is rendered on the parts page and may have any information desired in it for reference.
+Every item is a folder with metadata (files) and other items (folders) rendered with index.md for metadata
+The index.md is rendered as HTML on the parts page and may have any information desired in it for reference.
 
 ## ID
 
-ID is a base 64, 8 character long code. This allows for `281474976710656` unique items.
+ID is a base 64, 8 character long code. This allows for `281474976710656` unique items. IDs are randomly generated but checked for uniqueness.
 
 Since folder names are just the non-unique name, this means there could be conflicts.
 
@@ -110,7 +110,7 @@ All items *may* have a `photo.jpg` that will be used for thumbnails and will dis
 
 ## Attachments
 
-Items may have an arbitrary amount of attachments that will be available for download on the items page.
+Items may have an arbitrary amount of attachments that will be available for download on the items page. PDFs can be displayed in line for easy manual and document viewing. .md attachments can also be rendered as HTML inline for reference.
 
 ## License
 
