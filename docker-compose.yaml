@@ -1,9 +1,10 @@
 services:
   homerp:
-    build:
-      context: .  # Build the image from the current directory
+    image: ghcr.io/flroppy/homerp:latest
+    env_file:
+      - .env
     volumes:
-      - .:/app  # Mount the current directory to the container's /app directory
+      - ./House:/app/House  # Persist item data outside the container
     #ports:
       #- "8000:8000"  # Map port 8000 on the host to port 8000 in the container
     environment:

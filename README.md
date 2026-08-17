@@ -73,8 +73,12 @@ cp .env.example .env
 docker-compose up -d
 ```
 
-For deployment-specific tweaks (reverse proxy labels, custom networks, etc.), add a
-`docker-compose.override.yml` (gitignored) — Compose merges it in automatically.
+This pulls the prebuilt image from `ghcr.io/flroppy/homerp:latest` (built by CI on every
+push to main) rather than building locally.
+
+For deployment-specific tweaks (reverse proxy labels, custom networks, running the `example/`
+data read-only as a public demo, etc.), add a `docker-compose.override.yml` (gitignored) —
+Compose merges it in automatically.
 
 ## Goals
 These should always be thought about when implementing something
