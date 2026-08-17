@@ -1,17 +1,15 @@
-.git/
-_site/
 house/
 House/
-house_bak/
+
+# Python
 __pycache__/
 env/
+
+# Docker
 .env
 docker-compose.override.yml
+
+# Script Outputs
 barcode_output.png
 equipment_output/
 barcodes.csv
-id_rsa
-id_rsa.pub
-ssh_config
-.pytest_cache/
-tests/
