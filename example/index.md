@@ -1,8 +1,11 @@
 ---
 id: h3yNhbsh
 ---
-This is homERP's example data, bundled so you can try the app without setting up your own
-inventory first. Point `DATA_DIR` at this folder to browse it:
+homERP is Enterprise Resource Planning (ERP) for the home!
+
+[Source Code](https://git.flpy.link/floppy/homERP)
+
+This is homERP's example data so you can try it out. Point `DATA_DIR` at this folder to browse it on a local instance:
 
 ```bash
 DATA_DIR=example uvicorn main:app --app-dir src --reload
@@ -10,5 +13,3 @@ DATA_DIR=example uvicorn main:app --app-dir src --reload
 
 Browse into **Garage**, **Kitchen**, or **Office** below to see nested items, custom fields,
 and markdown content in action.
-
-TODO: add images and attachments
