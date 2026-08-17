@@ -319,10 +319,18 @@ dialog::backdrop { background: rgba(0,0,0,0.4); }
 .all-items-tree > ul { padding-left: 0; }
 
 .collapsible { cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 0.3rem; }
-.collapsible img { height: 2.5rem; width: auto; object-fit: cover; }
+.collapsible img { height: 2.5rem; width: 2.5rem; object-fit: cover; border-radius: var(--radius); flex-shrink: 0; }
 
 .content { display: none; }
 .expanded > .content { display: block; }
 .collapsed > .content { display: none; }
-.expanded > .collapsible::before  { content: "▼ "; font-size: 0.7em; color: var(--muted); }
-.collapsed > .collapsible::before { content: "► "; font-size: 0.7em; color: var(--muted); }
+.expanded > .collapsible::before,
+.collapsed > .collapsible::before {
+  content: "▶";
+  display: inline-block;
+  width: 0.9em;
+  font-size: 0.7em;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+.expanded > .collapsible::before { transform: rotate(90deg); }

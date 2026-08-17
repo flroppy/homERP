@@ -9,7 +9,9 @@
 {% block content %}
     <div class="all-items-tree">
         <div class="collapsible">
-            <img src="/thumbnail/" alt="Home">
+            {% if root_photo_path %}
+                <img src="/thumbnail/" alt="Home">
+            {% endif %}
             <a href="/browse">Home</a>
         </div>
         <ul>
