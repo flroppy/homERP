@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     git_token: str = ""
     git_author: str = "homERP <homerp@example.com>"
     api_key: str = ""
+    demo_read_only: bool = False
 
 
 settings = Settings()

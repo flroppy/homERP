@@ -33,6 +33,7 @@ All runtime config lives in `src/config.py` as a `pydantic-settings` `Settings` 
 - `BARCODE_PRINTER_MODEL`, `BARCODE_PRINTER_TAPE`, `BARCODE_RENDERED_HEIGHT` — label maker settings
 - `GIT_REMOTE_URL`, `GIT_USERNAME`, `GIT_TOKEN`, `GIT_AUTHOR` — git backup settings (implemented via `src/git_backup.py`/dulwich)
 - `API_KEY` — API key for the `src/routers/api.py` endpoints
+- `DEMO_READ_ONLY` — blocks all writes (HTML UI + `/api/*`) via a middleware in `src/main.py`; default `false`
 
 The printer backend is initialized lazily (only on first print), so the app starts cleanly with no printer configured.
 

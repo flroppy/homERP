@@ -25,9 +25,10 @@ content) so you can poke around without setting up your own data first:
 DATA_DIR=example uvicorn main:app --app-dir src --reload
 ```
 
-If you're hosting this publicly as a demo, point `DATA_DIR` at a scratch copy rather than
-`example/` directly — the app allows editing/deleting through the UI, so anyone visiting a
-live demo could modify or wipe it.
+If you're hosting this publicly as a demo, set `DEMO_READ_ONLY=true` — it blocks every
+create/edit/delete/upload/move across both the HTML UI and `/api/*` with a 403, so visitors
+can look around without being able to touch the data. It only blocks writes; it doesn't
+sandbox anything else, so don't point a public demo at data you care about either way.
 
 ### Configuration
 
@@ -36,6 +37,7 @@ All settings are environment variables, read from `.env`. The minimum you need t
 | Variable | Default | Description |
 |---|---|---|
 | `DATA_DIR` | `House` | Path to the directory where item data is stored |
+| `DEMO_READ_ONLY` | `false` | Block all writes (HTML UI + `/api/*`) — for hosting a public demo |
 | `BARCODE_PRINTER_MODEL` | `QL-810W` | Brother QL printer model |
 | `BARCODE_PRINTER_ADDRESS` | _(empty)_ | Printer address e.g. `tcp://192.168.1.50`; leave empty to disable printing |
 | `BARCODE_PRINTER_TAPE` | `12` | Tape width in mm |
