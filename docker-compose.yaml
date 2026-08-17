@@ -8,6 +8,4 @@ services:
     #ports:
       #- "8000:8000"  # Map port 8000 on the host to port 8000 in the container — leave commented if you're
       # attaching to a reverse proxy network (e.g. Traefik) instead; publish it per-deployment in your override
-    environment:
-      - PYTHONUNBUFFERED=1  # Ensure logs are printed directly to the console (useful for debugging)
     restart: unless-stopped
