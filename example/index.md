@@ -10,3 +10,5 @@ DATA_DIR=example uvicorn main:app --app-dir src --reload
 
 Browse into **Garage**, **Kitchen**, or **Office** below to see nested items, custom fields,
 and markdown content in action.
+
+TODO: add images and attachments
