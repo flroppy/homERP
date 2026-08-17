@@ -19,7 +19,16 @@
         {% block content %}{% endblock %}
     </main>
     <footer>
-        <p><a href="/all-items">All Items</a> &nbsp;|&nbsp; <a href="/fields">Fields</a> &nbsp;|&nbsp; <a href="/spark-joy">Spark Joy</a> &nbsp;|&nbsp; <a href="/git-status">Git status</a></p>
+        {% set gs = git_backup_status() %}
+        <p>
+            <a href="/all-items">All Items</a> &nbsp;|&nbsp; <a href="/fields">Fields</a> &nbsp;|&nbsp; <a href="/spark-joy">Spark Joy</a> &nbsp;|&nbsp;
+            {% if gs.configured %}
+                <a href="/git-status" class="git-status-link {{ 'git-status-error' if gs.error else 'git-status-ok' }}"
+                   title="{{ gs.error if gs.error else 'Git backup is working' }}">● Git status</a>
+            {% else %}
+                <a href="/git-status">Git status</a>
+            {% endif %}
+        </p>
         {% block footer %}{% endblock %}
     </footer>
 </body>

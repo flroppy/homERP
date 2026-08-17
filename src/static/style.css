@@ -6,6 +6,7 @@
   --accent: #1a56cc;
   --muted:  #666;
   --danger: #c0392b;
+  --ok:     #2e8b47;
   --radius: 3px;
   --max-w:  52rem;
   --gap:    1rem;
@@ -19,6 +20,7 @@
     --accent: #6ea8fe;
     --muted:  #999;
     --danger: #e05c4b;
+    --ok:     #4caf6f;
   }
 }
 
@@ -67,6 +69,10 @@ footer {
 
 footer a { color: var(--muted); }
 footer a:hover { color: var(--accent); }
+
+.git-status-ok { color: var(--ok); }
+.git-status-error { color: var(--danger); }
+.git-status-link:hover { text-decoration: underline; }
 
 main > section { margin-bottom: 1.5rem; }
 

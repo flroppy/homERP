@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Git Status - House Inventory{% endblock %}
+
+{% block header %}
+    <h1>Git Status</h1>
+{% endblock %}
+
+{% block content %}
+    {% if not status.configured %}
+        <p>Git backup isn't configured. Set <code>GIT_REMOTE_URL</code> (and <code>GIT_USERNAME</code>/<code>GIT_TOKEN</code>) in your <code>.env</code> to enable automatic commit + push on every change.</p>
+    {% elif status.error %}
+        <p class="git-status-error">✕ Something's wrong: <code>{{ status.error }}</code></p>
+    {% else %}
+        <p class="git-status-ok">✓ Git backup is working.</p>
+
+        {% if status.last_commit %}
+        <section>
+            <h3>Last commit</h3>
+            <p>{{ status.last_commit }}</p>
+        </section>
+        {% endif %}
+
+        {% if status.staged or status.unstaged or status.untracked %}
+        <section>
+            <h3>Pending changes</h3>
+            <p><small>Normal right after an edit — the backup queue commits and pushes these in the background.</small></p>
+            <ul>
+                {% for f in status.staged %}<li>{{ f }} <small>(staged)</small></li>{% endfor %}
+                {% for f in status.unstaged %}<li>{{ f }} <small>(unstaged)</small></li>{% endfor %}
+                {% for f in status.untracked %}<li>{{ f }} <small>(untracked)</small></li>{% endfor %}
+            </ul>
+        </section>
+        {% else %}
+        <p><small>Everything is committed and up to date.</small></p>
+        {% endif %}
+    {% endif %}
+{% endblock %}
