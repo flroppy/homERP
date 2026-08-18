@@ -18,6 +18,7 @@ from config import settings
 
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
+templates.env.globals["git_backup_status"] = lambda: git_backup.git_status(storage.HOUSE_ROOT)
 log = logging.getLogger(__name__)
 
 
@@ -445,6 +446,8 @@ async def browse_by_field(request: Request, field: str, value: str):
     })
 
 
-@router.get("/git-status")
-async def git_status_endpoint():
-    return git_backup.git_status(storage.HOUSE_ROOT)
+@router.get("/git-status", response_class=HTMLResponse)
+async def git_status_endpoint(request: Request):
+    return templates.TemplateResponse(request, "git_status.html", {
+        "status": git_backup.git_status(storage.HOUSE_ROOT),
+    })
