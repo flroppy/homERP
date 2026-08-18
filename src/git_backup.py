@@ -14,6 +14,7 @@ GITIGNORE_CONTENT = "thumbnail.jpg\n"
 _DEBOUNCE_SECONDS = 60.0
 
 _backup_queue: queue.Queue = queue.Queue()
+_status_cache: dict = {"configured": False}
 
 
 def is_configured() -> bool:
@@ -22,6 +23,7 @@ def is_configured() -> bool:
 
 def ensure_repo(data_dir: Path):
     """Ensure data_dir is a git repo with remote configured. Called at startup."""
+    global _status_cache
     if not is_configured():
         return
 
@@ -40,8 +42,13 @@ def ensure_repo(data_dir: Path):
     config.set((b"remote", b"origin"), b"url", remote_url)
     config.write_to_path()
 
+    # Warm the cache so it reflects reality (e.g. changes left over from a
+    # previous run) before the app starts serving requests.
+    _status_cache = _compute_git_status(data_dir)
+
 
 def _commit_and_push(data_dir: Path, message: str):
+    global _status_cache
     try:
         repo = Repo(str(data_dir))
         porcelain.add(repo)
@@ -60,6 +67,8 @@ def _commit_and_push(data_dir: Path, message: str):
         logger.info("Git backup: %s", message)
     except Exception:
         logger.exception("Git backup failed (message: %s)", message)
+    finally:
+        _status_cache = _compute_git_status(data_dir)
 
 
 def _build_message(messages: list[str]) -> str:
@@ -77,10 +86,15 @@ def _worker():
     everything staged in one shot. Rapid bursts produce a single commit+push
     with a summary subject and per-operation list in the body.
     """
+    global _status_cache
     while True:
         # Block until there is at least one operation to process.
         first_message, data_dir = _backup_queue.get()
         messages = [first_message]
+        # Reflect the pending write immediately. Runs here in the background
+        # thread rather than in git_auto_backup(), so it never adds a live
+        # git walk to the request that triggered it.
+        _status_cache = _compute_git_status(data_dir)
 
         # Drain additional operations that arrive within the debounce window.
         # Each new arrival resets the deadline so the window slides with activity.
@@ -117,14 +131,28 @@ def git_auto_backup(operation: str, item_name: str, relative_path: str, data_dir
 
 
 def git_status(data_dir: Path) -> dict:
-    """Return current git status for the /git-status endpoint."""
+    """Return the cached git status for the /git-status endpoint and footer indicator.
+
+    Always an instant cache read — never a live git walk. The app is the
+    only writer to the data repo, so the cache is only refreshed on the
+    events that can actually change it: once at startup, when the backup
+    worker picks up a newly queued write (so "pending changes" show up
+    right away), and again once the debounced commit+push completes.
+    """
     if not is_configured():
         return {"configured": False}
+    return _status_cache
+
+
+def _compute_git_status(data_dir: Path) -> dict:
     try:
         repo = Repo(str(data_dir))
         status = porcelain.status(repo)
-        commits = list(repo.get_walker(max_entries=1))
-        last_commit = commits[0].commit.message.decode().strip() if commits else None
+        try:
+            commits = list(repo.get_walker(max_entries=1))
+            last_commit = commits[0].commit.message.decode().strip() if commits else None
+        except KeyError:
+            last_commit = None  # no commits yet (e.g. before the first backup runs)
         staged = status.staged or {}
         return {
             "configured": True,
