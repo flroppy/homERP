@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build and Run Commands
-- Run app: `uvicorn main:app --host "0.0.0.0" --port 80 --reload --app-dir src`
+- Run app: `uvicorn src.main:app --host "0.0.0.0" --port 80 --reload`
 - Docker: `docker-compose up -d`
 - Run tests: `env/bin/pytest tests/ -v`
 

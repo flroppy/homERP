@@ -13,7 +13,7 @@ This is a home ERP system for tracking storage of evergreen items in the househo
 pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your settings
-uvicorn main:app --host 0.0.0.0 --port 80 --reload --app-dir src
+uvicorn src.main:app --host 0.0.0.0 --port 80 --reload
 ```
 
 ### Try it with example data
@@ -22,7 +22,7 @@ The `example/` folder has a small sample inventory (nested items, custom fields,
 content) so you can poke around without setting up your own data first:
 
 ```bash
-DATA_DIR=example uvicorn main:app --app-dir src --reload
+DATA_DIR=example uvicorn src.main:app --reload
 ```
 
 If you're hosting this publicly as a demo, set `DEMO_READ_ONLY=true` — it blocks every
