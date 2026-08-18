@@ -76,6 +76,10 @@ docker-compose up -d
 This pulls the prebuilt image from `ghcr.io/flroppy/homerp:latest` (built by CI on every
 push to main) rather than building locally.
 
+To cut a versioned release, push a tag matching `v*` (e.g. `git tag v1.2.0 && git push origin
+v1.2.0`) — CI builds and pushes `ghcr.io/flroppy/homerp:v1.2.0` and re-tags `:latest` to
+match, so you can pin a deployment to a specific version instead of always tracking main.
+
 For deployment-specific tweaks (reverse proxy labels, custom networks, running the `example/`
 data read-only as a public demo, etc.), add a `docker-compose.override.yml` (gitignored) —
 Compose merges it in automatically.
