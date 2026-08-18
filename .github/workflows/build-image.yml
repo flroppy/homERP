@@ -15,6 +15,6 @@ jobs:
       - name: Log in to Gitea container registry
         run: echo "${{ secrets.PACKAGE_DEPLOY_TOKEN }}" | docker login git.mir.meta -u floppy --password-stdin
       - name: Build image
-        run: docker build --build-arg GIT_SHA=$(git rev-parse --short HEAD) -t ghcr.io/flroppy/homerp:latest .
+        run: docker build --build-arg GIT_SHA=$(git rev-parse --short HEAD) -t ghcr.io/flroppy/homerp:git .
       - name: Push image
-        run: docker push ghcr.io/flroppy/homerp:latest
+        run: docker push ghcr.io/flroppy/homerp:git

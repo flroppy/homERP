@@ -73,12 +73,16 @@ cp .env.example .env
 docker-compose up -d
 ```
 
-This pulls the prebuilt image from `ghcr.io/flroppy/homerp:latest` (built by CI on every
-push to main) rather than building locally.
+This pulls the prebuilt image from `ghcr.io/flroppy/homerp:latest` rather than building
+locally. Three image tags are published:
+
+- `:latest` — the most recent tagged release. What `docker-compose.yaml` uses by default.
+- `:git` — rebuilt on every push to main, for tracking unreleased changes.
+- `:vX.Y.Z` — a specific release, for pinning a deployment to a known version.
 
 To cut a versioned release, push a tag matching `v*` (e.g. `git tag v1.2.0 && git push origin
 v1.2.0`) — CI builds and pushes `ghcr.io/flroppy/homerp:v1.2.0` and re-tags `:latest` to
-match, so you can pin a deployment to a specific version instead of always tracking main.
+match.
 
 For deployment-specific tweaks (reverse proxy labels, custom networks, running the `example/`
 data read-only as a public demo, etc.), add a `docker-compose.override.yml` (gitignored) —
