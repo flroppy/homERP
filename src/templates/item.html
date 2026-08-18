@@ -27,7 +27,7 @@
             {% endif %}
         </div>
 
-        {{ metadata.html_content | safe }}
+        <div class="markdown-content">{{ metadata.html_content | safe }}</div>
 
         {% if custom_fields %}
         <ul class="field-chips">
@@ -108,7 +108,7 @@
                     {% elif is_md %}
                         <iframe data-src="/view-md/{{attachment.path}}" height="400px" title="{{ attachment.name }}"></iframe>
                     {% elif is_text %}
-                        <iframe data-src="/view/{{attachment.path}}" height="300px" title="{{ attachment.name }}"></iframe>
+                        <iframe data-src="/view-text/{{attachment.path}}" height="300px" title="{{ attachment.name }}"></iframe>
                     {% endif %}
                 </details>
                 {% else %}

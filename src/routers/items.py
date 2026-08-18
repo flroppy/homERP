@@ -302,8 +302,19 @@ async def view_markdown(request: Request, path: str):
         raise HTTPException(status_code=403, detail="Access to this file is forbidden")
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="File not found")
-    html_content = markdown.markdown(file_path.read_text(encoding="utf-8"))
+    html_content = markdown.markdown(file_path.read_text(encoding="utf-8"), extensions=["tables"])
     return templates.TemplateResponse(request, "view_md.html", {"html_content": html_content})
+
+
+@router.get("/view-text/{path:path}")
+async def view_text(request: Request, path: str):
+    file_path = storage.HOUSE_ROOT / path
+    if not str(file_path.resolve()).startswith(str(storage.HOUSE_ROOT.resolve())):
+        raise HTTPException(status_code=403, detail="Access to this file is forbidden")
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    text_content = file_path.read_text(encoding="utf-8", errors="replace")
+    return templates.TemplateResponse(request, "view_text.html", {"text_content": text_content})
 
 
 @router.post("/rename-attachment/{path:path}")

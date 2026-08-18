@@ -47,6 +47,18 @@ p  { margin: 0.5rem 0; }
 small { color: var(--muted); }
 code { font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
 
+/* ── Rendered markdown (item descriptions, .md attachments) ────────────────
+   The reset above zeroes padding on every element, which strips the default
+   left inset that list markers need — without this they render clipped
+   against the edge of the page/iframe. */
+.markdown-content ol,
+.markdown-content ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+.markdown-content li { margin: 0.15rem 0; }
+.markdown-content table { border-collapse: collapse; margin: 0.5rem 0; }
+.markdown-content th,
+.markdown-content td { border: 1px solid var(--border); padding: 0.3rem 0.6rem; text-align: left; }
+.markdown-content th { background: var(--border); }
+
 /* ── Links ──────────────────────────────────────────────────────────────── */
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }

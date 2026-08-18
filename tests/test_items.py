@@ -215,6 +215,32 @@ def test_view_attachment_inline(client, item, data_dir):
     assert 'attachment' not in r.headers.get('content-disposition', '')
 
 
+def test_item_description_renders_table_and_wraps_markdown(client, data_dir):
+    content = "| A | B |\n|---|---|\n| 1 | 2 |\n\n1. first\n2. second\n"
+    client.post('/new/', data={'name': 'Table Item', 'content': content, 'label': 'no'},
+                files={'photo': ('', b'', 'application/octet-stream')})
+    r = client.get('/browse/Table%20Item')
+    assert r.status_code == 200
+    assert '<table>' in r.text
+    assert '<div class="markdown-content">' in r.text
+
+
+def test_view_text_renders_themed_page(client, item, data_dir):
+    client.post(f'/upload/{item}', files={'file': ('note.txt', b'hello world', 'text/plain')})
+    r = client.get(f'/view-text/{item}/note.txt')
+    assert r.status_code == 200
+    assert '<pre>hello world</pre>' in r.text
+    assert 'style.css' in r.text
+
+
+def test_view_text_escapes_content(client, item, data_dir):
+    client.post(f'/upload/{item}', files={'file': ('note.txt', b'<script>alert(1)</script>', 'text/plain')})
+    r = client.get(f'/view-text/{item}/note.txt')
+    assert r.status_code == 200
+    assert '<script>' not in r.text
+    assert '&lt;script&gt;' in r.text
+
+
 def test_rename_attachment(client, item, data_dir):
     client.post(f'/upload/{item}', files={'file': ('old.txt', b'x', 'text/plain')})
     r = client.post(f'/rename-attachment/{item}/old.txt', data={'new_name': 'new.txt'})

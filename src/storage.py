@@ -88,7 +88,7 @@ def adjust_paths_in_markdown(md_content, base_dir):
 def render_html(markdown_text, item_path):
     markdown_text = adjust_paths_in_markdown(markdown_text, '/download/' / item_path)
     markdown_text = shift_headings_down(markdown_text)
-    return markdown.markdown(markdown_text)
+    return markdown.markdown(markdown_text, extensions=["tables"])
 
 
 def read_index_file(item_path):
