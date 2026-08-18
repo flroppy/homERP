@@ -20,5 +20,14 @@ EXPOSE 8000
 # Define environment variable for running the app
 ENV PYTHONUNBUFFERED=1
 
+# Version info for the footer indicator, baked in at build time since the
+# .git directory itself is excluded via .dockerignore. VERSION is the git
+# tag on a tagged release build (see release-image.yml); GIT_SHA is the
+# commit, always set and used as a fallback when there's no release tag.
+ARG GIT_SHA=unknown
+ARG VERSION=
+ENV GIT_SHA=$GIT_SHA
+ENV VERSION=$VERSION
+
 # Run the application
 CMD ["uvicorn", "src.main:app", "--reload", "--host", "0.0.0.0"]

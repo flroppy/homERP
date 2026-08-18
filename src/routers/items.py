@@ -15,10 +15,14 @@ import storage
 import barcode as barcode_mod
 import git_backup
 from config import settings
+from version import VERSION, VERSION_URL, SOURCE_URL
 
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 templates.env.globals["git_backup_status"] = lambda: git_backup.git_status(storage.HOUSE_ROOT)
+templates.env.globals["app_version"] = VERSION
+templates.env.globals["app_version_url"] = VERSION_URL
+templates.env.globals["source_url"] = SOURCE_URL
 log = logging.getLogger(__name__)
 
 

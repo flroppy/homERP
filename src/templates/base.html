@@ -29,6 +29,10 @@
                 <a href="/git-status">Git status</a>
             {% endif %}
         </p>
+        <p><a href="{{ source_url }}">Source</a> &nbsp;|&nbsp;
+            {% if app_version_url %}<a href="{{ app_version_url }}">{{ app_version }}</a>
+            {% else %}{{ app_version }}{% endif %}
+        </p>
         {% block footer %}{% endblock %}
     </footer>
 </body>
