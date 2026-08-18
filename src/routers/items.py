@@ -66,9 +66,11 @@ async def browse(request: Request, path: str = ""):
 @router.get("/all-items", response_class=HTMLResponse)
 async def all_items(request: Request):
     all_items_hierarchy, total = storage.get_hierarchy()
+    root_metadata = storage.read_index_file(storage.HOUSE_ROOT) or {}
     return templates.TemplateResponse(request, "all_items.html", {
         "items": all_items_hierarchy,
         "total_items": total,
+        "root_photo_path": root_metadata.get("photo_path"),
     })
 
 
