@@ -11,7 +11,10 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Fields</h1>
+    <div class="header-row">
+        <h1>Fields</h1>
+        <a role="button" href="/filter">Filter</a>
+    </div>
 
     {% if fields %}
         {% for field, values in fields.items() %}

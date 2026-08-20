@@ -54,6 +54,70 @@ def get_fields() -> dict[str, list]:
     return {k: sorted(v) for k, v in sorted(fields.items())}
 
 
+NUMERIC_OPS = frozenset({"gt", "gte", "lt", "lte"})
+VALID_FILTER_OPS = frozenset({"eq", "ne"}) | NUMERIC_OPS
+
+
+def _to_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def filter_items(items, field: str, value: str | None = None, op: str = "eq") -> list:
+    """Filter items on any custom field, generically.
+
+    eq/ne compare as case-insensitive strings. gt/gte/lt/lte parse both the stored
+    field and `value` as numbers, silently excluding items whose field isn't numeric.
+    value=None returns items unfiltered (useful when only sort_items() is wanted).
+    """
+    if op not in VALID_FILTER_OPS:
+        raise ValueError(f"Unknown op {op!r}, must be one of {sorted(VALID_FILTER_OPS)}")
+    if value is None:
+        return list(items)
+
+    if op in NUMERIC_OPS:
+        threshold = _to_float(value)
+        if threshold is None:
+            raise ValueError(f"value {value!r} must be numeric for op {op!r}")
+        compare = {
+            "gt": lambda n: n > threshold,
+            "gte": lambda n: n >= threshold,
+            "lt": lambda n: n < threshold,
+            "lte": lambda n: n <= threshold,
+        }[op]
+        results = []
+        for item in items:
+            n = _to_float(item.get(field))
+            if n is not None and compare(n):
+                results.append(item)
+        return results
+
+    value_lower = value.lower()
+    if op == "eq":
+        return [item for item in items if str(item.get(field, "")).lower() == value_lower]
+    return [item for item in items if str(item.get(field, "")).lower() != value_lower]
+
+
+def sort_items(items, field: str | None, order: str = "asc") -> list:
+    """Sort items by any custom field, generically.
+
+    Items whose field parses as a number sort numerically first (respecting `order`);
+    items where it doesn't (or it's missing) are appended afterwards, sorted alphabetically.
+    """
+    if not field:
+        return list(items)
+
+    numeric, other = [], []
+    for item in items:
+        n = _to_float(item.get(field))
+        (numeric if n is not None else other).append(item)
+    numeric.sort(key=lambda item: _to_float(item.get(field)), reverse=(order == "desc"))
+    other.sort(key=lambda item: str(item.get(field, "")).lower())
+    return numeric + other
+
+
 def generate_id():
     while True:
         candidate = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8')[:UUID_LENGTH]

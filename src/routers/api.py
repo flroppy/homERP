@@ -252,14 +252,26 @@ async def get_tree():
 
 
 @router.get("/filter")
-async def filter_items(field: str, value: str):
-    """List all items where a custom field equals the given value (case-insensitive)."""
+async def filter_items(field: str, value: Optional[str] = None, op: str = "eq",
+                        sort: Optional[str] = None, order: str = "asc"):
+    """List items filtered (and optionally sorted) by any custom field.
+
+    op: 'eq'/'ne' compare case-insensitively as strings (default 'eq'); 'gt'/'gte'/'lt'/'lte'
+    compare numerically, e.g. `field=value&op=gte&value=40` for a value/threshold filter.
+    sort: field to sort results by (defaults to `field`); order: 'asc' (default) or 'desc'.
+    """
+    if order not in ("asc", "desc"):
+        raise HTTPException(status_code=400, detail="order must be 'asc' or 'desc'")
     items, _ = storage.list_all_items(storage.HOUSE_ROOT)
-    results = [
-        _serialize(item) for item in items
-        if str(item.get(field, "")).lower() == value.lower()
-    ]
-    return {"field": field, "value": value, "results": results}
+    try:
+        filtered = storage.filter_items(items, field, value, op)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    results = storage.sort_items(filtered, sort or field, order)
+    return {
+        "field": field, "value": value, "op": op, "sort": sort or field, "order": order,
+        "results": [_serialize(item) for item in results],
+    }
 
 
 @router.get("/fields")

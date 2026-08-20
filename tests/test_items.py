@@ -158,6 +158,35 @@ def test_search_by_id(client, item, data_dir):
     assert item in r.text
 
 
+# --- Filter ---
+
+def test_filter_page_empty_shows_form(client):
+    r = client.get('/filter')
+    assert r.status_code == 200
+    assert 'Filter items' in r.text
+
+
+def test_filter_page_numeric_threshold(client):
+    client.post('/api/items/', json={'name': 'Cheap', 'fields': {'value': '5'}})
+    client.post('/api/items/', json={'name': 'Pricey', 'fields': {'value': '400'}})
+    r = client.get('/filter?field=value&op=gte&value=40')
+    assert r.status_code == 200
+    assert 'Pricey' in r.text
+    assert 'Cheap' not in r.text
+
+
+def test_filter_page_invalid_op_returns_400(client):
+    r = client.get('/filter?field=value&op=bogus&value=1')
+    assert r.status_code == 400
+
+
+def test_by_field_still_exact_match(client):
+    client.post('/api/items/', json={'name': 'Chess', 'fields': {'category': 'Board Games'}})
+    r = client.get('/by-field/category/Board Games')
+    assert r.status_code == 200
+    assert 'Chess' in r.text
+
+
 # --- By ID ---
 
 def test_by_id_redirects(client, item, data_dir):

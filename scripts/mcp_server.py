@@ -78,12 +78,21 @@ def list_fields() -> str:
 
 @mcp.tool(name="homerp filter")
 def filter_by_field(
-    field: Annotated[str, Field(description="Custom field name to filter on, e.g. 'category'.")],
-    value: Annotated[str, Field(description="Value to match (case-insensitive), e.g. 'Board Games'.")],
+    field: Annotated[str, Field(description="Custom field name to filter/sort on, e.g. 'category' or 'value'.")],
+    value: Annotated[str | None, Field(description="Value to compare against. Omit to list/sort all items that have this field, e.g. for a plain top-N-by-value query.")] = None,
+    op: Annotated[str, Field(description="'eq'/'ne' compare as case-insensitive strings (default 'eq'); 'gt'/'gte'/'lt'/'lte' compare numerically, e.g. op='gte', value='40' for items worth at least 40.")] = "eq",
+    sort: Annotated[str | None, Field(description="Field to sort results by (defaults to `field`). Numeric values sort numerically; others alphabetically, appended after.")] = None,
+    order: Annotated[str, Field(description="'asc' (default) or 'desc'.")] = "asc",
 ) -> str:
-    """List all items where a custom field equals the given value, regardless of where they're stored."""
+    """List items filtered by any custom field, with optional numeric thresholds and sorting.
+    Works generically for any field, e.g. 'category' equals 'Board Games', or 'value' at least 40 sorted descending."""
     with _client() as c:
-        r = c.get("/api/filter", params={"field": field, "value": value})
+        params = {"field": field, "op": op, "order": order}
+        if value is not None:
+            params["value"] = value
+        if sort is not None:
+            params["sort"] = sort
+        r = c.get("/api/filter", params=params)
         r.raise_for_status()
         return _fmt(r.json())
 
