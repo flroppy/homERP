@@ -451,15 +451,39 @@ async def fields_index(request: Request):
 
 @router.get("/by-field/{field}/{value:path}", response_class=HTMLResponse)
 async def browse_by_field(request: Request, field: str, value: str):
-    all_items, _ = storage.list_all_items(storage.HOUSE_ROOT)
-    results = [
-        item for item in all_items
-        if str(item.get(field, "")).lower() == value.lower()
-    ]
+    items, _ = storage.list_all_items(storage.HOUSE_ROOT)
+    results = storage.filter_items(items, field, value, "eq")
     return templates.TemplateResponse(request, "field_results.html", {
         "field": field,
         "value": value,
+        "op": "eq",
+        "sort": field,
+        "order": "asc",
         "results": results,
+    })
+
+
+@router.get("/filter", response_class=HTMLResponse)
+async def filter_items_page(request: Request, field: str = "", value: str = "", op: str = "eq",
+                             sort: str = "", order: str = "asc"):
+    """Generic filter/sort page: numeric threshold ops (gt/gte/lt/lte) support things like
+    'items worth more than $40', not just exact-match lookups."""
+    results = []
+    if field:
+        items, _ = storage.list_all_items(storage.HOUSE_ROOT)
+        try:
+            filtered = storage.filter_items(items, field, value or None, op)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        results = storage.sort_items(filtered, sort or field, order)
+    return templates.TemplateResponse(request, "field_results.html", {
+        "field": field,
+        "value": value,
+        "op": op,
+        "sort": sort or field,
+        "order": order,
+        "results": results,
+        "fields": storage.get_fields(),
     })
 
 

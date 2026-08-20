@@ -76,6 +76,7 @@ fetch('/api/fields').then(r => r.json()).then(data => { _fields = data; });
 function _attachFieldRow(row) {
     const keyInput = row.querySelector('[name="field_key"]');
     const valInput = row.querySelector('[name="field_value"]');
+    if (!keyInput || !valInput) return; // .field-row reused by non-field-editor forms
     autocomplete(keyInput, q => {
         const keys = Object.keys(_fields);
         return q ? keys.filter(k => k.toLowerCase().includes(q.toLowerCase())) : keys;

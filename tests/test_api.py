@@ -192,6 +192,50 @@ def test_filter_case_insensitive(client):
     assert 'Risk' in names
 
 
+def test_filter_numeric_threshold(client):
+    client.post('/api/items/', json={'name': 'Cheap', 'fields': {'value': '5'}})
+    client.post('/api/items/', json={'name': 'Pricey', 'fields': {'value': '400'}})
+    r = client.get('/api/filter?field=value&op=gte&value=40')
+    assert r.status_code == 200
+    names = [i['name'] for i in r.json()['results']]
+    assert 'Pricey' in names
+    assert 'Cheap' not in names
+
+
+def test_filter_numeric_excludes_non_numeric_field_values(client):
+    client.post('/api/items/', json={'name': 'NoNumber', 'fields': {'value': 'lots'}})
+    r = client.get('/api/filter?field=value&op=gt&value=0')
+    names = [i['name'] for i in r.json()['results']]
+    assert 'NoNumber' not in names
+
+
+def test_filter_numeric_op_requires_numeric_value(client):
+    r = client.get('/api/filter?field=value&op=gt&value=notanumber')
+    assert r.status_code == 400
+
+
+def test_filter_invalid_op_rejected(client):
+    r = client.get('/api/filter?field=value&op=bogus&value=1')
+    assert r.status_code == 400
+
+
+def test_filter_sort_defaults_to_field_and_is_numeric(client):
+    client.post('/api/items/', json={'name': 'Mid', 'fields': {'value': '10'}})
+    client.post('/api/items/', json={'name': 'Low', 'fields': {'value': '2'}})
+    client.post('/api/items/', json={'name': 'High', 'fields': {'value': '99'}})
+    r = client.get('/api/filter?field=value&op=gte&value=0&order=desc')
+    names = [i['name'] for i in r.json()['results']]
+    assert names.index('High') < names.index('Mid') < names.index('Low')
+
+
+def test_filter_without_value_lists_all_sorted(client):
+    client.post('/api/items/', json={'name': 'SortA', 'fields': {'weight': '3'}})
+    client.post('/api/items/', json={'name': 'SortB', 'fields': {'weight': '1'}})
+    r = client.get('/api/filter?field=weight&sort=weight')
+    names = [i['name'] for i in r.json()['results']]
+    assert names.index('SortB') < names.index('SortA')
+
+
 def test_list_fields(client):
     client.post('/api/items/', json={'name': 'A', 'fields': {'category': 'Board Games'}})
     client.post('/api/items/', json={'name': 'B', 'fields': {'category': 'Card Games', 'condition': 'Good'}})

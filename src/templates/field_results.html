@@ -1,25 +1,72 @@
 {% extends "base.html" %}
 
-{% block title %}{{ field }}: {{ value }} - House Inventory{% endblock %}
+{% block title %}{{ field }}{% if value %}: {{ value }}{% endif %} - House Inventory{% endblock %}
 
 {% block header %}
     <nav aria-label="breadcrumb">
         <ul>
             <li><a href="/browse/">Home</a></li>
+            <li><a href="/fields">Fields</a></li>
         </ul>
     </nav>
 {% endblock %}
 
 {% block content %}
-    <h1>{{ field }}: {{ value }}</h1>
+    <h1>Filter items</h1>
 
-    {% if results %}
-        <ul>
-        {% for item in results %}
-            <li><a href="/browse/{{ item.path }}">{{ item.name }}</a></li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No items found.</p>
+    <form action="/filter" method="get">
+        <div class="field-row">
+            <input type="text" name="field" id="filter-field" value="{{ field }}" placeholder="field, e.g. value" aria-label="Field" required>
+            <select name="op" aria-label="Comparison">
+                <option value="eq" {{ "selected" if op == "eq" }}>equals</option>
+                <option value="ne" {{ "selected" if op == "ne" }}>does not equal</option>
+                <option value="gt" {{ "selected" if op == "gt" }}>greater than</option>
+                <option value="gte" {{ "selected" if op == "gte" }}>at least</option>
+                <option value="lt" {{ "selected" if op == "lt" }}>less than</option>
+                <option value="lte" {{ "selected" if op == "lte" }}>at most</option>
+            </select>
+            <input type="text" name="value" id="filter-value" value="{{ value }}" placeholder="value, e.g. 40 (blank = any)" aria-label="Value">
+        </div>
+        <div class="field-row">
+            <input type="text" name="sort" id="filter-sort" value="{{ sort }}" placeholder="sort by field" aria-label="Sort by field">
+            <select name="order" aria-label="Sort order">
+                <option value="asc" {{ "selected" if order == "asc" }}>ascending</option>
+                <option value="desc" {{ "selected" if order == "desc" }}>descending</option>
+            </select>
+            <button type="submit">Filter</button>
+        </div>
+    </form>
+
+    {% if field %}
+        <h2>{{ field }}{% if op == "eq" %} = {% elif op == "ne" %} ≠ {% elif op == "gt" %} &gt; {% elif op == "gte" %} ≥ {% elif op == "lt" %} &lt; {% elif op == "lte" %} ≤ {% endif %}{{ value }}</h2>
+
+        {% if results %}
+            <ul>
+            {% for item in results %}
+                <li>
+                    <a href="/browse/{{ item.path }}">{{ item.name }}</a>
+                    {% if sort and item.get(sort) is not none %}<small>({{ sort }}: {{ item.get(sort) }})</small>{% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>No items found.</p>
+        {% endif %}
     {% endif %}
+
+    <script src="/static/fields-autocomplete.js"></script>
+    <script>
+        autocomplete(document.getElementById('filter-field'), q => {
+            const keys = Object.keys(_fields);
+            return q ? keys.filter(k => k.toLowerCase().includes(q.toLowerCase())) : keys;
+        });
+        autocomplete(document.getElementById('filter-sort'), q => {
+            const keys = Object.keys(_fields);
+            return q ? keys.filter(k => k.toLowerCase().includes(q.toLowerCase())) : keys;
+        });
+        autocomplete(document.getElementById('filter-value'), q => {
+            const vals = _fields[document.getElementById('filter-field').value] || [];
+            return q ? vals.filter(v => v.toLowerCase().includes(q.toLowerCase())) : vals;
+        });
+    </script>
 {% endblock %}

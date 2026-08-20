@@ -13,6 +13,8 @@
 {% block content %}
     <h1>Fields</h1>
 
+    <p><a href="/filter">Filter / sort by any field →</a> (e.g. numeric thresholds like "value at least 40")</p>
+
     {% if fields %}
         {% for field, values in fields.items() %}
         <section>
