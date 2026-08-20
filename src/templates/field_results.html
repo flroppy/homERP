@@ -15,7 +15,7 @@
     <h1>Filter items</h1>
 
     <form action="/filter" method="get">
-        <div class="field-row">
+        <div class="filter-row">
             <input type="text" name="field" id="filter-field" value="{{ field }}" placeholder="field, e.g. value" aria-label="Field" required>
             <select name="op" aria-label="Comparison">
                 <option value="eq" {{ "selected" if op == "eq" }}>equals</option>
@@ -27,7 +27,7 @@
             </select>
             <input type="text" name="value" id="filter-value" value="{{ value }}" placeholder="value, e.g. 40 (blank = any)" aria-label="Value">
         </div>
-        <div class="field-row">
+        <div class="filter-row">
             <input type="text" name="sort" id="filter-sort" value="{{ sort }}" placeholder="sort by field" aria-label="Sort by field">
             <select name="order" aria-label="Sort order">
                 <option value="asc" {{ "selected" if order == "asc" }}>ascending</option>

@@ -39,14 +39,20 @@ function _acShow(input, getOptions) {
             input.dispatchEvent(new Event('ac-select', { bubbles: true }));
         });
 
-        // Mobile: distinguish tap from scroll via touchmove.
-        // touchmove also dismisses the list globally (see below), so by the time
-        // touchend fires after a scroll the isTap flag is already false.
-        let isTap = false;
-        li.addEventListener('touchstart', () => { isTap = true;  }, { passive: true });
-        li.addEventListener('touchmove',  () => { isTap = false; }, { passive: true });
+        // Mobile: distinguish a tap from a drag-to-scroll-the-list gesture by
+        // movement distance, not "did touchmove fire at all" — a stationary
+        // finger still fires small touchmove events, which previously cancelled
+        // every tap. We never preventDefault on touchmove, so the list's native
+        // overflow-y:auto scrolling still works for real drags.
+        let touchStartY = null;
+        li.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+        li.addEventListener('touchmove', e => {
+            if (touchStartY !== null && Math.abs(e.touches[0].clientY - touchStartY) > 10) {
+                touchStartY = null; // moved enough to be a scroll, not a tap
+            }
+        }, { passive: true });
         li.addEventListener('touchend', e => {
-            if (!isTap) return;
+            if (touchStartY === null) return;
             e.preventDefault(); // prevent synthetic mousedown/click double-fire
             input.value = text;
             _acDismiss();
@@ -66,7 +72,13 @@ function _acDismiss() {
 }
 
 document.addEventListener('click',  e  => { if (e.target !== _acTarget) _acDismiss(); });
-document.addEventListener('scroll', _acDismiss, { passive: true, capture: true });
+// capture:true also catches scroll events from the list's own overflow-y:auto
+// scrolling (they don't bubble, but capture still sees them on the way down) —
+// ignore those so scrolling the list doesn't immediately dismiss it.
+document.addEventListener('scroll', e => {
+    if (e.target && e.target.classList && e.target.classList.contains('autocomplete-list')) return;
+    _acDismiss();
+}, { passive: true, capture: true });
 
 // ── Fields editor ─────────────────────────────────────────────────────────────
 
