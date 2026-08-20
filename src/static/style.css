@@ -103,7 +103,7 @@ nav > ul li:not(:last-child)::after {
   color: var(--muted);
 }
 
-/* ── Header row with a right-aligned action link (e.g. breadcrumb + Filter) ── */
+/* ── Header row with a right-aligned action link (e.g. page title + button) ── */
 .header-row {
   display: flex;
   flex-wrap: wrap;
@@ -111,6 +111,9 @@ nav > ul li:not(:last-child)::after {
   align-items: center;
   gap: 0.5rem;
 }
+
+.header-row h1 { margin: 0.5rem 0; }
+.header-row a[role="button"], .header-row button { margin: 0; }
 
 /* ── Search form in header ──────────────────────────────────────────────── */
 header form[role="search"] {
@@ -153,7 +156,7 @@ fieldset legend { font-weight: 600; font-size: 0.9rem; }
 fieldset label { display: inline; font-weight: normal; margin-right: 1rem; }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
-button, input[type="submit"] {
+button, input[type="submit"], a[role="button"] {
   display: inline-block;
   padding: 0.35rem 0.75rem;
   border: 1px solid var(--border);
@@ -164,10 +167,11 @@ button, input[type="submit"] {
   cursor: pointer;
   margin-top: 0.75rem;
   margin-right: 0.4rem;
+  text-decoration: none;
 }
 
-button:hover, input[type="submit"]:hover { background: var(--border); }
-button:focus-visible, input[type="submit"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:hover, input[type="submit"]:hover, a[role="button"]:hover { background: var(--border); text-decoration: none; }
+button:focus-visible, input[type="submit"]:focus-visible, a[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 button.danger { border-color: var(--danger); color: var(--danger); }
 button.danger:hover { background: var(--danger); color: var(--bg); }
