@@ -103,6 +103,15 @@ nav > ul li:not(:last-child)::after {
   color: var(--muted);
 }
 
+/* ── Header row with a right-aligned action link (e.g. breadcrumb + Filter) ── */
+.header-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* ── Search form in header ──────────────────────────────────────────────── */
 header form[role="search"] {
   display: flex;
