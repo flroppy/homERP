@@ -23,7 +23,7 @@ def get_version() -> tuple[str, Optional[str]]:
     """
     tag = os.getenv("VERSION")
     if tag:
-        return tag, f"{SOURCE_URL}/src/tag/{tag}"
+        return tag, f"{SOURCE_URL}/tree/{tag}"
 
     sha = os.getenv("GIT_SHA")
     if sha:

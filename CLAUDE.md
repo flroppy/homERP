@@ -40,4 +40,4 @@ The printer backend is initialized lazily (only on first print), so the app star
 `GROCY_API_KEY` and `GROCY_BASE_URL` are read directly via `os.getenv` in `scripts/import_grocy.py` and are not part of `config.py`'s `Settings`.
 
 ## Planned Work
-Tracked as [Gitea issues](https://github.com/flroppy/homERP/issues) — that is the source of truth for planned features and refactors, not this file.
+Tracked as [GitHub issues](https://github.com/flroppy/homERP/issues) — that is the source of truth for planned features and refactors, not this file.
