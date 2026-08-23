@@ -120,6 +120,15 @@ All items *may* have a `photo.jpg` that will be used for thumbnails and will dis
 
 Items may have an arbitrary amount of attachments that will be available for download on the items page. PDFs can be displayed in line for easy manual and document viewing. .md attachments can also be rendered as HTML inline for reference.
 
+## Admin scripts
+
+One-off admin scripts (`generate_barcodes.py`, `import_grocy.py`, `mcp_server.py`) live in
+`scripts/` and have extra dependencies beyond the main app. Install them with:
+
+```bash
+pip install -r scripts/requirements.txt
+```
+
 ## License
 
 [Unlicense](LICENSE) — public domain.

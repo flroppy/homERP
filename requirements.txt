@@ -16,4 +16,3 @@ python-multipart
 python-Levenshtein
 brother-ql
 dulwich
-mcp>=1.9,<2
