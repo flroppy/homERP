@@ -29,5 +29,8 @@ ARG VERSION=
 ENV GIT_SHA=$GIT_SHA
 ENV VERSION=$VERSION
 
-# Run the application
-CMD ["uvicorn", "src.main:app", "--reload", "--host", "0.0.0.0"]
+# Run the application. No --reload here: this image also runs in production,
+# where the file watcher would keep polling the bind-mounted data directory
+# (see docker-compose.yaml's ./House:/app/House) and burn CPU at idle. Use
+# `uvicorn src.main:app --reload` directly for local dev instead.
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0"]
